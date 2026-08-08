@@ -113,3 +113,9 @@ export const logoutUser = (req, res) => {
 		message: "Logged out successfully",
 	});
 };
+export const getMe = async (req, res) => {
+	return res.status(200).json({
+		success: true,
+		user: req.user,
+	});
+};
