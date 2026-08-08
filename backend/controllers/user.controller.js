@@ -145,3 +145,64 @@ export const getUserProfile = async (req, res) => {
 		});
 	}
 };
+export const updateProfile = async (req, res) => {
+	try {
+		const { name, username, bio } = req.body;
+
+
+		const user = await User.findById(req.user._id);
+
+		if (username && username !== user.username) {
+			const existingUser = await User.findOne({ username });
+
+			if (existingUser) {
+				return res.status(400).json({
+					success: false,
+					message: "Username is already taken",
+				});
+			}
+		}
+
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		if (name) user.name = name;
+		if (username) user.username = username;
+		if (bio) user.bio = bio;
+
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "Profile updated successfully",
+			user: {
+				_id: user._id,
+				name: user.name,
+				username: user.username,
+				email: user.email,
+				bio: user.bio,
+				profilePic: user.profilePic,
+				followers: user.followers,
+				following: user.following,
+			},
+		});
+	} catch (error) {
+		console.error("Update Profile Error:", error.message);
+
+		if (error.code === 11000) {
+			return res.status(400).json({
+				success: false,
+				message: "Username is already taken",
+			});
+		}
+
+		return res.status(500).json({
+			success: false,
+			message: "Internal Server Error",
+		});
+	}
+};
