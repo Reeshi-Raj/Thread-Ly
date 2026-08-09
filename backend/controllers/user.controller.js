@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
+import uploadToCloudinary from "../utils/uploadToCloudinary.js";
+import deleteFromCloudinary from "../utils/deleteFromCloudinary.js";
 
 export const signupUser = async (req, res) => {
 	try{
@@ -146,12 +148,25 @@ export const getUserProfile = async (req, res) => {
 	}
 };
 export const updateProfile = async (req, res) => {
+	let uploadedImage = null;
+	let oldProfilePic = null;
+
 	try {
 		const { name, username, bio } = req.body;
 
-
 		const user = await User.findById(req.user._id);
 
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Store old profile picture before making changes
+		oldProfilePic = user.profilePic;
+
+		// Check if new username is already taken
 		if (username && username !== user.username) {
 			const existingUser = await User.findOne({ username });
 
@@ -163,18 +178,41 @@ export const updateProfile = async (req, res) => {
 			}
 		}
 
-		if (!user) {
-			return res.status(404).json({
-				success: false,
-				message: "User not found",
-			});
-		}
-
+		// Update text fields
 		if (name) user.name = name;
 		if (username) user.username = username;
 		if (bio) user.bio = bio;
 
+		// Upload new profile picture if provided
+		if (req.file) {
+			const result = await uploadToCloudinary(
+				req.file.buffer,
+				"threadshub/profile-pictures"
+			);
+
+			// Keep track of newly uploaded image
+			// so we can delete it if MongoDB save fails
+			uploadedImage = result;
+
+			user.profilePic = {
+				url: result.secure_url,
+				publicId: result.public_id,
+			};
+		}
+
+		// Save updated user to MongoDB
 		await user.save();
+
+		// MongoDB save successful,
+		// so now delete the old image from Cloudinary
+		if (
+			uploadedImage &&
+			oldProfilePic?.publicId
+		) {
+			await deleteFromCloudinary(
+				oldProfilePic.publicId
+			);
+		}
 
 		return res.status(200).json({
 			success: true,
@@ -193,11 +231,27 @@ export const updateProfile = async (req, res) => {
 	} catch (error) {
 		console.error("Update Profile Error:", error.message);
 
+		// If username duplicate reaches MongoDB unique index
 		if (error.code === 11000) {
 			return res.status(400).json({
 				success: false,
 				message: "Username is already taken",
 			});
+		}
+
+		// If Cloudinary upload succeeded but MongoDB save failed,
+		// delete the newly uploaded image to prevent orphaned files
+		if (uploadedImage?.public_id) {
+			try {
+				await deleteFromCloudinary(
+					uploadedImage.public_id
+				);
+			} catch (deleteError) {
+				console.error(
+					"Failed to cleanup Cloudinary image:",
+					deleteError.message
+				);
+			}
 		}
 
 		return res.status(500).json({
