@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import deleteFromCloudinary from "../utils/deleteFromCloudinary.js";
+import mongoose from "mongoose";
 
 export const signupUser = async (req, res) => {
 	try{
@@ -258,5 +259,165 @@ export const updateProfile = async (req, res) => {
 			success: false,
 			message: "Internal Server Error",
 		});
+	}
+};
+export const followUser = async (req, res) => {
+	const session = await mongoose.startSession();
+
+	try {
+		const targetUserId = req.params.id;
+		const currentUserId = req.user._id;
+
+		// User cannot follow themselves
+		if (currentUserId.toString() === targetUserId) {
+			return res.status(400).json({
+				success: false,
+				message: "You cannot follow yourself",
+			});
+		}
+
+		session.startTransaction();
+
+		const userToFollow = await User.findById(targetUserId).session(
+			session
+		);
+
+		if (!userToFollow) {
+			await session.abortTransaction();
+
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		const currentUser = await User.findById(currentUserId).session(
+			session
+		);
+
+		if (!currentUser) {
+			await session.abortTransaction();
+
+			return res.status(404).json({
+				success: false,
+				message: "Current user not found",
+			});
+		}
+
+		// Check if already following
+		if (currentUser.following.includes(userToFollow._id)) {
+			await session.abortTransaction();
+
+			return res.status(400).json({
+				success: false,
+				message: "You are already following this user",
+			});
+		}
+
+		// Update both users
+		currentUser.following.push(userToFollow._id);
+		userToFollow.followers.push(currentUser._id);
+
+		await currentUser.save({ session });
+		await userToFollow.save({ session });
+
+		await session.commitTransaction();
+
+		return res.status(200).json({
+			success: true,
+			message: "User followed successfully",
+		});
+	} catch (error) {
+		await session.abortTransaction();
+
+		console.error("Follow User Error:", error.message);
+
+		return res.status(500).json({
+			success: false,
+			message: "Internal Server Error",
+		});
+	} finally {
+		session.endSession();
+	}
+};
+export const unfollowUser = async (req, res) => {
+	const session = await mongoose.startSession();
+
+	try {
+		const targetUserId = req.params.id;
+		const currentUserId = req.user._id;
+
+		// User cannot unfollow themselves
+		if (currentUserId.toString() === targetUserId) {
+			return res.status(400).json({
+				success: false,
+				message: "You cannot unfollow yourself",
+			});
+		}
+
+		session.startTransaction();
+
+		const userToUnfollow = await User.findById(targetUserId).session(
+			session
+		);
+
+		if (!userToUnfollow) {
+			await session.abortTransaction();
+
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		const currentUser = await User.findById(currentUserId).session(
+			session
+		);
+
+		if (!currentUser) {
+			await session.abortTransaction();
+
+			return res.status(404).json({
+				success: false,
+				message: "Current user not found",
+			});
+		}
+
+		// Check if currently following
+		if (!currentUser.following.includes(userToUnfollow._id)) {
+			await session.abortTransaction();
+
+			return res.status(400).json({
+				success: false,
+				message: "You are not following this user",
+			});
+		}
+
+		// Remove target user from following
+		currentUser.following.pull(userToUnfollow._id);
+
+		// Remove current user from target user's followers
+		userToUnfollow.followers.pull(currentUser._id);
+
+		await currentUser.save({ session });
+		await userToUnfollow.save({ session });
+
+		await session.commitTransaction();
+
+		return res.status(200).json({
+			success: true,
+			message: "User unfollowed successfully",
+		});
+	} catch (error) {
+		await session.abortTransaction();
+
+		console.error("Unfollow User Error:", error.message);
+
+		return res.status(500).json({
+			success: false,
+			message: "Internal Server Error",
+		});
+	} finally {
+		session.endSession();
 	}
 };
