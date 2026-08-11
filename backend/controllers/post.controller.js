@@ -190,12 +190,26 @@ export const getUserPosts = async (req, res) => {
 	}
 };
 export const deletePost = async (req, res) => {
+	const session = await mongoose.startSession();
+
 	try {
 		const { id } = req.params;
 
-		const post = await Post.findById(id);
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid post ID",
+			});
+		}
+
+		session.startTransaction();
+
+		// Find post inside transaction
+		const post = await Post.findById(id).session(session);
 
 		if (!post) {
+			await session.abortTransaction();
+
 			return res.status(404).json({
 				success: false,
 				message: "Post not found",
@@ -204,13 +218,23 @@ export const deletePost = async (req, res) => {
 
 		// Only post owner can delete the post
 		if (post.user.toString() !== req.user._id.toString()) {
+			await session.abortTransaction();
+
 			return res.status(403).json({
 				success: false,
 				message: "You are not authorized to delete this post",
 			});
 		}
 
-		// Delete image from Cloudinary first
+		await Comment.deleteMany({
+			post: id,
+		}).session(session);
+
+		await Post.findByIdAndDelete(id).session(session);
+
+		// MongoDB work is complete
+		await session.commitTransaction();
+
 		if (post.image?.publicId) {
 			try {
 				await deleteFromCloudinary(post.image.publicId);
@@ -220,30 +244,24 @@ export const deletePost = async (req, res) => {
 					cloudinaryError.message
 				);
 
-				return res.status(500).json({
-					success: false,
-					message: "Failed to delete post image",
-				});
 			}
 		}
-
-		// Delete post from MongoDB
-		await Post.findByIdAndDelete(id);
 
 		return res.status(200).json({
 			success: true,
 			message: "Post deleted successfully",
 		});
 	} catch (error) {
+		await session.abortTransaction();
+
 		console.error("Delete Post Error:", error.message);
 
 		return res.status(500).json({
 			success: false,
 			message: "Internal Server Error",
 		});
-        // one issue may occur that Cloudinary se img delete ho gyi but mongoDB se deletion fail kr gya 
-        // in that case we can not have image in cloudinary but post rhega in DB
-        // that is one issue in here. CAN'T USE TRANSACTION with cloudinary 
+	} finally {
+		session.endSession();
 	}
 };
 export const toggleLike = async (req, res) => {
