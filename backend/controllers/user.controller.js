@@ -126,7 +126,9 @@ export const getUserProfile = async (req, res) => {
 	try {
 		const { username } = req.params;
 
-		const user = await User.findOne({ username }).select("-password");
+		const user = await User.findOne({ username }).select(
+			"-password"
+		);
 
 		if (!user) {
 			return res.status(404).json({
@@ -135,12 +137,29 @@ export const getUserProfile = async (req, res) => {
 			});
 		}
 
+		const currentUserId = req.user?._id;
+
+		const isFollowing = currentUserId
+			? user.followers.includes(currentUserId)
+			: false;
+
 		return res.status(200).json({
 			success: true,
-			user,
+			user: {
+				_id: user._id,
+				name: user.name,
+				username: user.username,
+				bio: user.bio,
+				profilePic: {
+					url: user.profilePic?.url || "",
+				},
+				followersCount: user.followers.length,
+				followingCount: user.following.length,
+				isFollowing,
+			},
 		});
 	} catch (error) {
-		console.error("Get Profile Error:", error.message);
+		console.error("Get User Profile Error:", error.message);
 
 		return res.status(500).json({
 			success: false,
