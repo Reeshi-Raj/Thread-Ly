@@ -402,7 +402,7 @@ export const unfollowUser = async (req, res) => {
 			});
 		}
 
-		// Check if currently following
+		// Check if currently following or not
 		if (!currentUser.following.includes(userToUnfollow._id)) {
 			await session.abortTransaction();
 
