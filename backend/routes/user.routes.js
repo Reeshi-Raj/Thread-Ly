@@ -12,7 +12,7 @@ router.post("/logout", logoutUser);
 router.get("/me", protectRoute, getMe);
 router.get("/profile/:username", getUserProfile);
 router.put("/update",protectRoute,upload.single("profilePic"),updateProfile);
-router.post("/follow/:id",protectRoute,followUser); // testing baki
-router.post("/unfollow/:id",protectRoute,unfollowUser); // testing baki
+router.post("/follow/:id",protectRoute,followUser); 
+router.post("/unfollow/:id",protectRoute,unfollowUser);
 
 export default router;
