@@ -1,28 +1,37 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import { loginUser } from "../services/auth.service";
+import { signupUser } from "../services/auth.service";
 
-const Login = () => {
+const Signup = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
 	const [formData, setFormData] = useState({
+		name: "",
+		username: "",
 		email: "",
 		password: "",
 	});
 
-	const loginMutation = useMutation({
-		mutationFn: loginUser,
+	const signupMutation = useMutation({
+		mutationFn: signupUser,
 
-		onSuccess: async () => {
+		onSuccess: async (data) => {
+			toast.success(
+				data.message || "Account created successfully"
+			);
+
+			// Signup already creates JWT cookie.
+			// So refresh the current-user query.
 			await queryClient.invalidateQueries({
 				queryKey: ["me"],
 			});
-
-			toast.success("Login successful");
 
 			navigate("/");
 		},
@@ -30,7 +39,7 @@ const Login = () => {
 		onError: (error) => {
 			toast.error(
 				error.response?.data?.message ||
-					"Login failed"
+					"Signup failed"
 			);
 		},
 	});
@@ -47,23 +56,63 @@ const Login = () => {
 	const handleSubmit = (e) => {
 		e.preventDefault();
 
-		loginMutation.mutate(formData);
+		signupMutation.mutate(formData);
 	};
 
 	return (
 		<div className="rounded-2xl border bg-white p-6 shadow-sm">
 			<h1 className="text-2xl font-bold">
-				Welcome back
+				Create your account
 			</h1>
 
 			<p className="mt-1 text-sm text-gray-500">
-				Login to continue to Threads Clone.
+				Join Threads Clone today.
 			</p>
 
 			<form
 				onSubmit={handleSubmit}
 				className="mt-6 space-y-4"
 			>
+				<div>
+					<label
+						htmlFor="name"
+						className="mb-1 block text-sm font-medium"
+					>
+						Name
+					</label>
+
+					<input
+						id="name"
+						name="name"
+						type="text"
+						value={formData.name}
+						onChange={handleChange}
+						placeholder="Enter your name"
+						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
+						required
+					/>
+				</div>
+
+				<div>
+					<label
+						htmlFor="username"
+						className="mb-1 block text-sm font-medium"
+					>
+						Username
+					</label>
+
+					<input
+						id="username"
+						name="username"
+						type="text"
+						value={formData.username}
+						onChange={handleChange}
+						placeholder="Choose a username"
+						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
+						required
+					/>
+				</div>
+
 				<div>
 					<label
 						htmlFor="email"
@@ -78,7 +127,7 @@ const Login = () => {
 						type="email"
 						value={formData.email}
 						onChange={handleChange}
-						placeholder="Enter email"
+						placeholder="Enter your email"
 						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
 						required
 					/>
@@ -98,7 +147,7 @@ const Login = () => {
 						type="password"
 						value={formData.password}
 						onChange={handleChange}
-						placeholder="Enter password"
+						placeholder="Create a password"
 						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
 						required
 					/>
@@ -106,26 +155,26 @@ const Login = () => {
 
 				<button
 					type="submit"
-					disabled={loginMutation.isPending}
+					disabled={signupMutation.isPending}
 					className="w-full rounded-lg bg-black px-4 py-2 font-medium text-white disabled:opacity-50"
 				>
-					{loginMutation.isPending
-						? "Logging in..."
-						: "Login"}
+					{signupMutation.isPending
+						? "Creating account..."
+						: "Create account"}
 				</button>
 			</form>
 
 			<p className="mt-5 text-center text-sm text-gray-500">
-				Don't have an account?{" "}
+				Already have an account?{" "}
 				<Link
-					to="/signup"
+					to="/login"
 					className="font-medium text-black underline"
 				>
-					Sign up
+					Login
 				</Link>
 			</p>
 		</div>
 	);
 };
 
-export default Login;
+export default Signup;

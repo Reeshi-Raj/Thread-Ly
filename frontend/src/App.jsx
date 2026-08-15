@@ -8,26 +8,9 @@ import AuthLayout from "./layouts/AuthLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
-import { getMe } from "./services/auth.service";
+import Signup from "./pages/Signup";
 
 const App = () => {
-      useEffect(() => {
-		const testApi = async () => {
-			try {
-				const data = await getMe();
-
-				console.log("GET ME RESPONSE:", data);
-			} catch (error) {
-				console.error(
-					"GET ME ERROR:",
-					error.response?.data || error.message
-				);
-			}
-		};
-
-		testApi();
-	}, []);
 	return (
 		<BrowserRouter>
 			<Routes>
@@ -39,6 +22,7 @@ const App = () => {
 				{/* Authentication routes */}
 				<Route element={<AuthLayout />}>
 					<Route path="/login" element={<Login />} />
+					<Route path="/signup" element={<Signup />} />
 				</Route>
 
 				{/* Fallback */}

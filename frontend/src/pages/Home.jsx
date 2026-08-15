@@ -1,14 +1,35 @@
-const Home = () => {
-	return (
-		<section>
-			<h2 className="text-2xl font-bold">
-				Home Page
-			</h2>
+import { useAuth } from "../context/AuthContext";
 
-			<p className="mt-2 text-gray-500">
-				Your feed will appear here.
+const Home = () => {
+	const {
+		user,
+		isLoading,
+		isAuthenticated,
+		isError,
+	} = useAuth();
+
+	if (isLoading) {
+		return <div>Checking authentication...</div>;
+	}
+
+	return (
+		<div className="min-h-screen flex flex-col items-center justify-center">
+			<h1 className="text-4xl font-bold">
+				Home Page
+			</h1>
+
+			<p className="mt-4">
+				Authenticated: {String(isAuthenticated)}
 			</p>
-		</section>
+
+			<p>
+				User: {user ? user.username : "Not logged in"}
+			</p>
+
+			<p>
+				Error: {String(isError)}
+			</p>
+		</div>
 	);
 };
 
