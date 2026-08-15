@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery,useQueryClient,useMutation } from "@tanstack/react-query";
 
-import { getMe } from "../services/auth.service";
+import { getMe , logoutUser} from "../services/auth.service";
 
 const AuthContext = createContext(null);
 
@@ -15,8 +15,19 @@ export const AuthProvider = ({ children }) => {
 		queryFn: getMe,
 		retry: false,
 	});
-
 	const user = data?.user ?? null;
+
+	const queryClient = useQueryClient();
+
+	const logoutMutation = useMutation({
+		mutationFn: logoutUser,
+
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["me"],
+			});
+		},
+	});
 
 	return (
 		<AuthContext.Provider
@@ -25,6 +36,8 @@ export const AuthProvider = ({ children }) => {
 				isLoading,
 				isError,
 				isAuthenticated: !!user,
+				logout: logoutMutation.mutate,
+				isLoggingOut: logoutMutation.isPending,
 			}}
 		>
 			{children}

@@ -9,17 +9,20 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
 	return (
 		<BrowserRouter>
 			<Routes>
-				{/* Application routes */}
-				<Route element={<MainLayout />}>
-					<Route path="/" element={<Home />} />
+				{/* Protected Routees */}
+				<Route element={<ProtectedRoute />}>
+					<Route element={<MainLayout />}>
+						<Route path="/" element={<Home />} />
+					</Route>
 				</Route>
 
-				{/* Authentication routes */}
+				{/* public routes */}
 				<Route element={<AuthLayout />}>
 					<Route path="/login" element={<Login />} />
 					<Route path="/signup" element={<Signup />} />
