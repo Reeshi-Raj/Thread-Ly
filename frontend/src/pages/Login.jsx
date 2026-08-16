@@ -51,75 +51,85 @@ const Login = () => {
 	};
 
 	return (
-		<div className="rounded-2xl border bg-white p-6 shadow-sm">
-			<h1 className="text-2xl font-bold">
-				Welcome back
-			</h1>
+		<div className="w-full max-w-md">
+			{/* Header */}
+			<div className="mb-8 text-center">
+				<h1 className="text-3xl font-bold tracking-tight text-white">
+					Welcome back
+				</h1>
 
-			<p className="mt-1 text-sm text-gray-500">
-				Login to continue to Threads Clone.
-			</p>
+				<p className="mt-2 text-sm text-white/50">
+					Login to continue to Threads Clone.
+				</p>
+			</div>
 
-			<form
-				onSubmit={handleSubmit}
-				className="mt-6 space-y-4"
-			>
-				<div>
-					<label
-						htmlFor="email"
-						className="mb-1 block text-sm font-medium"
-					>
-						Email
-					</label>
-
-					<input
-						id="email"
-						name="email"
-						type="email"
-						value={formData.email}
-						onChange={handleChange}
-						placeholder="Enter email"
-						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
-						required
-					/>
-				</div>
-
-				<div>
-					<label
-						htmlFor="password"
-						className="mb-1 block text-sm font-medium"
-					>
-						Password
-					</label>
-
-					<input
-						id="password"
-						name="password"
-						type="password"
-						value={formData.password}
-						onChange={handleChange}
-						placeholder="Enter password"
-						className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2"
-						required
-					/>
-				</div>
-
-				<button
-					type="submit"
-					disabled={loginMutation.isPending}
-					className="w-full rounded-lg bg-black px-4 py-2 font-medium text-white disabled:opacity-50"
+			{/* Login Card */}
+			<div className="rounded-2xl border border-white/10 bg-[#101010] p-6 shadow-2xl">
+				<form
+					onSubmit={handleSubmit}
+					className="space-y-5"
 				>
-					{loginMutation.isPending
-						? "Logging in..."
-						: "Login"}
-				</button>
-			</form>
+					{/* Email */}
+					<div>
+						<label
+							htmlFor="email"
+							className="mb-2 block text-sm font-medium text-white/80"
+						>
+							Email
+						</label>
 
-			<p className="mt-5 text-center text-sm text-gray-500">
+						<input
+							id="email"
+							name="email"
+							type="email"
+							value={formData.email}
+							onChange={handleChange}
+							placeholder="Enter email"
+							className="w-full rounded-xl border border-white/10 bg-[#181818] px-4 py-3 text-white placeholder:text-white/30 outline-none transition focus:border-white/30 focus:ring-1 focus:ring-white/20"
+							required
+						/>
+					</div>
+
+					{/* Password */}
+					<div>
+						<label
+							htmlFor="password"
+							className="mb-2 block text-sm font-medium text-white/80"
+						>
+							Password
+						</label>
+
+						<input
+							id="password"
+							name="password"
+							type="password"
+							value={formData.password}
+							onChange={handleChange}
+							placeholder="Enter password"
+							className="w-full rounded-xl border border-white/10 bg-[#181818] px-4 py-3 text-white placeholder:text-white/30 outline-none transition focus:border-white/30 focus:ring-1 focus:ring-white/20"
+							required
+						/>
+					</div>
+
+					{/* Submit */}
+					<button
+						type="submit"
+						disabled={loginMutation.isPending}
+						className="w-full rounded-xl bg-white px-4 py-3 font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{loginMutation.isPending
+							? "Logging in..."
+							: "Login"}
+					</button>
+				</form>
+			</div>
+
+			{/* Signup */}
+			<p className="mt-6 text-center text-sm text-white/50">
 				Don't have an account?{" "}
 				<Link
 					to="/signup"
-					className="font-medium text-black underline"
+					className="font-medium text-white underline underline-offset-4 hover:text-white/80"
 				>
 					Sign up
 				</Link>

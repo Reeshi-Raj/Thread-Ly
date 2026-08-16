@@ -1,76 +1,52 @@
-// import { useAuth } from "../context/AuthContext";
-
-// const Home = () => {
-// 	const {
-// 		user,
-// 		isLoading,
-// 		isAuthenticated,
-// 		isError,
-// 	} = useAuth();
-
-// 	if (isLoading) {
-// 		return <div>Checking authentication...</div>;
-// 	}
-
-// 	return (
-// 		<div className="min-h-screen flex flex-col items-center justify-center">
-// 			<h1 className="text-4xl font-bold">
-// 				Home Page
-// 			</h1>
-
-// 			<p className="mt-4">
-// 				Authenticated: {String(isAuthenticated)}
-// 			</p>
-
-// 			<p>
-// 				User: {user ? user.username : "Not logged in"}
-// 			</p>
-
-// 			<p>
-// 				Error: {String(isError)}
-// 			</p>
-// 		</div>
-// 	);
-// };
-
-// export default Home;
-import { useAuth } from "../context/AuthContext";
+import CreatePost from "../components/CreatePost";
+import PostCard from "../components/PostCard";
 
 const Home = () => {
-	const {
-		user,
-		isLoading,
-		isAuthenticated,
-		logout,
-		isLoggingOut,
-	} = useAuth();
-
-	if (isLoading) {
-		return <div>Checking authentication...</div>;
-	}
+	const posts = [
+		{
+			_id: "1",
+			user: {
+				name: "John Doe",
+				username: "johndoe",
+			},
+			content:
+				"Building something cool today. Really enjoying this project!",
+			image: null,
+			time: "2h",
+			likes: 24,
+			comments: 5,
+		},
+		{
+			_id: "2",
+			user: {
+				name: "Jane",
+				username: "jane",
+			},
+			content:
+				"Dark UI + clean architecture just hits different. 🖤",
+			image: null,
+			time: "4h",
+			likes: 42,
+			comments: 8,
+		},
+	];
 
 	return (
-		<div className="min-h-screen flex flex-col items-center justify-center">
-			<h1 className="text-4xl font-bold">
-				Home Page
-			</h1>
+		<section className="mx-auto w-full max-w-2xl">
+			<div className="border-b border-white/10 px-4 py-5">
+				<h1 className="text-xl font-semibold">
+					Home
+				</h1>
+			</div>
+			<CreatePost/>
 
-			<p className="mt-4">
-				Authenticated: {String(isAuthenticated)}
-			</p>
-
-			<p>
-				User: {user?.username || "Not logged in"}
-			</p>
-
-			<button
-				onClick={() => logout()}
-				disabled={isLoggingOut}
-				className="mt-6 rounded-lg bg-black px-5 py-2 text-white disabled:opacity-50"
-			>
-				{isLoggingOut ? "Logging out..." : "Logout"}
-			</button>
-		</div>
+			{posts.map((post) => (
+				<PostCard
+					key={post._id}
+					post={post}
+				/>
+			))}
+		</section>
 	);
 };
 
