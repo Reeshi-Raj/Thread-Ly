@@ -1,9 +1,40 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import { logoutUser } from "../services/auth.service";
 
 const Sidebar = () => {
 	const location = useLocation();
 	const { user } = useAuth();
+	const navigate = useNavigate();
+const queryClient = useQueryClient();
+
+const logoutMutation = useMutation({
+	mutationFn: logoutUser,
+
+	onSuccess: (data) => {
+		// Remove authenticated user data from React Query cache
+		queryClient.removeQueries({
+			queryKey: ["me"],
+		});
+
+		toast.success(
+			data.message || "Logged out successfully"
+		);
+
+		navigate("/login");
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Logout failed"
+		);
+	},
+});
 
 	const isActive = (path) => location.pathname === path;
 
@@ -83,9 +114,18 @@ const Sidebar = () => {
 						</div>
 					</div>
 				)}
+				<button
+				type="button"
+				onClick={() => logoutMutation.mutate()}
+				disabled={logoutMutation.isPending}
+				className="block w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+				>
+				{logoutMutation.isPending
+					? "Logging out..."
+					: "Logout"}
+				</button>
 			</div>
 		</aside>
 	);
 };
-
 export default Sidebar;

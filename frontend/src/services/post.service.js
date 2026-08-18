@@ -18,3 +18,19 @@ export const getFeed = async (page = 1, limit = 10) => {
 
 	return response.data;
 };
+export const getUserPosts = async (
+	username,
+	page = 1,
+	limit = 10
+) => {
+	const response = await api.get(
+		`/posts/user/${username}`,
+		{
+			params: {
+				page,
+				limit,
+			},
+		}
+	);
+	return response.data;
+};

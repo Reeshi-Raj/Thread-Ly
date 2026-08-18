@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
+import Create from "./pages/Create";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
@@ -19,6 +20,7 @@ const App = () => {
 				<Route element={<ProtectedRoute />}>
 					<Route element={<MainLayout />}>
 						<Route path="/" element={<Home />} />
+						<Route path="/create" element={<Create />} />
 					</Route>
 				</Route>
 
