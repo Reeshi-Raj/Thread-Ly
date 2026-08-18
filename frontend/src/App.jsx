@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import Create from "./pages/Create";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Profile from "./pages/Profile";
 
 const App = () => {
 	return (
@@ -21,6 +22,7 @@ const App = () => {
 					<Route element={<MainLayout />}>
 						<Route path="/" element={<Home />} />
 						<Route path="/create" element={<Create />} />
+						<Route path="/profile/:username" element={<Profile />} />
 					</Route>
 				</Route>
 
