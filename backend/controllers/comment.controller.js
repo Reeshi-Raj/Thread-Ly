@@ -308,7 +308,9 @@ export const deleteComment = async (req, res) => {
 
 		session.startTransaction();
 
-		const comment = await Comment.findById(commentId).session(session);
+		const comment = await Comment.findById(commentId).session(
+			session
+		);
 
 		if (!comment) {
 			await session.abortTransaction();
@@ -320,28 +322,33 @@ export const deleteComment = async (req, res) => {
 		}
 
 		// Only comment owner can delete it
-		if (comment.user.toString() !== req.user._id.toString()) {
+		if (
+			comment.user.toString() !==
+			req.user._id.toString()
+		) {
 			await session.abortTransaction();
 
 			return res.status(403).json({
 				success: false,
-				message: "You are not authorized to delete this comment",
+				message:
+					"You are not authorized to delete this comment",
 			});
 		}
 
-		let commentIdsToDelete = [comment._id];
+		// Soft delete the comment
+		await Comment.findByIdAndUpdate(
+			commentId,
+			{
+				$set: {
+					isDeleted: true,
+					text: "",
+				},
+			},
+			{ session }
+		);
 
-		// Top-level comment
-		if (!comment.parentComment) {
-			const replyIds = await Comment.find({
-				parentComment: comment._id,
-			})
-				.session(session)
-				.distinct("_id");
-
-			commentIdsToDelete.push(...replyIds);
-		} else {
-			// Reply → decrease parent's replies count
+		// If this is a reply, decrease parent's replies count
+		if (comment.parentComment) {
 			await Comment.findByIdAndUpdate(
 				comment.parentComment,
 				{
@@ -353,27 +360,6 @@ export const deleteComment = async (req, res) => {
 			);
 		}
 
-		// Remove comment/replies from Post.comments
-		await Post.findByIdAndUpdate(
-			comment.post,
-			{
-				$pull: {
-					comments: {
-						$in: commentIdsToDelete,
-					},
-				},
-			},
-			{ session }
-		);
-
-		// Delete comment + replies
-		await Comment.deleteMany({
-			_id: {
-				$in: commentIdsToDelete,
-			},
-		}).session(session);
-
-		// Everything succeeded
 		await session.commitTransaction();
 
 		return res.status(200).json({
@@ -383,7 +369,10 @@ export const deleteComment = async (req, res) => {
 	} catch (error) {
 		await session.abortTransaction();
 
-		console.error("Delete Comment Error:", error.message);
+		console.error(
+			"Delete Comment Error:",
+			error.message
+		);
 
 		return res.status(500).json({
 			success: false,

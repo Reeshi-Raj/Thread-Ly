@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema(
 	{
+		isDeleted:{
+			type:Boolean,
+			default:false,
+		},
+		
 		user: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",

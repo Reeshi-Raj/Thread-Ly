@@ -8,3 +8,13 @@ export const createPost = async (formData) => {
 
 	return response.data;
 };
+export const getFeed = async (page = 1, limit = 10) => {
+	const response = await api.get("/posts/feed", {
+		params: {
+			page,
+			limit,
+		},
+	});
+
+	return response.data;
+};

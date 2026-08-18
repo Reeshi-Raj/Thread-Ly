@@ -21,13 +21,13 @@ const PostCard = ({ post }) => {
 						</Link>
 
 						<span className="text-sm text-white/40">
-							· {post.time}
+							· {post.createdAt}
 						</span>
 					</div>
 
 					{/* Content */}
 					<p className="mt-2 whitespace-pre-wrap text-[15px] leading-6 text-white/90">
-						{post.content}
+						{post.text}
 					</p>
 
 					{/* Post Image */}
@@ -47,14 +47,14 @@ const PostCard = ({ post }) => {
 							type="button"
 							className="transition hover:text-white"
 						>
-							♡ {post.likes}
+							♡ {post.likes?.length || 0}
 						</button>
 
 						<button
 							type="button"
 							className="transition hover:text-white"
 						>
-							💬 {post.comments}
+							💬 {post.comments?.length || 0}
 						</button>
 
 						<button

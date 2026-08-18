@@ -217,33 +217,47 @@ export const deletePost = async (req, res) => {
 		}
 
 		// Only post owner can delete the post
-		if (post.user.toString() !== req.user._id.toString()) {
+		if (
+			post.user.toString() !==
+			req.user._id.toString()
+		) {
 			await session.abortTransaction();
 
 			return res.status(403).json({
 				success: false,
-				message: "You are not authorized to delete this post",
+				message:
+					"You are not authorized to delete this post",
 			});
 		}
 
-		await Comment.deleteMany({
-			post: id,
-		}).session(session);
-
-		await Post.findByIdAndDelete(id).session(session);
+		// Soft delete the post
+		await Post.findByIdAndUpdate(
+			id,
+			{
+				$set: {
+					isDeleted: true,
+					text: "",
+					"image.url": "",
+					// retained publicID for potential cleanup in Cloudinary
+				},
+			},
+			{ session }
+		);
 
 		// MongoDB work is complete
 		await session.commitTransaction();
 
+		// Delete image from Cloudinary after MongoDB commit
 		if (post.image?.publicId) {
 			try {
-				await deleteFromCloudinary(post.image.publicId);
+				await deleteFromCloudinary(
+					post.image.publicId
+				);
 			} catch (cloudinaryError) {
 				console.error(
 					"Cloudinary Delete Error:",
 					cloudinaryError.message
 				);
-
 			}
 		}
 
@@ -254,7 +268,10 @@ export const deletePost = async (req, res) => {
 	} catch (error) {
 		await session.abortTransaction();
 
-		console.error("Delete Post Error:", error.message);
+		console.error(
+			"Delete Post Error:",
+			error.message
+		);
 
 		return res.status(500).json({
 			success: false,
