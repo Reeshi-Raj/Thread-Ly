@@ -280,6 +280,76 @@ export const updateProfile = async (req, res) => {
 		});
 	}
 };
+export const updatePassword = async (req, res) => {
+	try {
+		const { currentPassword, newPassword, confirmPassword } = req.body;
+
+		// Validation
+		if (!currentPassword || !newPassword || !confirmPassword) {
+			return res.status(400).json({
+				success: false,
+				message: "Please provide all password fields",
+			});
+		}
+
+		if (newPassword !== confirmPassword) {
+			return res.status(400).json({
+				success: false,
+				message: "New passwords do not match",
+			});
+		}
+
+		if (newPassword.length < 6) {
+			return res.status(400).json({
+				success: false,
+				message: "Password must be at least 6 characters",
+			});
+		}
+
+		// Get user
+		const user = await User.findById(req.user._id);
+
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Verify current password
+		const isPasswordCorrect = await bcrypt.compare(
+			currentPassword,
+			user.password
+		);
+
+		if (!isPasswordCorrect) {
+			return res.status(400).json({
+				success: false,
+				message: "Current password is incorrect",
+			});
+		}
+
+		// Hash new password
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+		// Update password
+		user.password = hashedPassword;
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "Password updated successfully",
+		});
+	} catch (error) {
+		console.error("Update Password Error:", error.message);
+
+		return res.status(500).json({
+			success: false,
+			message: "Internal Server Error",
+		});
+	}
+};
 export const followUser = async (req, res) => {
 	const session = await mongoose.startSession();
 
