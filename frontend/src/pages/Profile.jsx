@@ -11,6 +11,7 @@ import { useState } from "react";
 import EditProfileModal from "../components/EditProfileModal";
 import { updateProfile, updatePassword } from "../services/user.service";
 import { useNavigate } from "react-router-dom";
+import {followUser,unfollowUser} from "../services/user.service";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -123,6 +124,57 @@ const handleSaveProfile = ({
     const user = data?.user;
     const isOwnProfile = meData?.user?._id === user?._id;
 
+	const followMutation = useMutation({
+	mutationFn: followUser,
+
+	onSuccess: async (data) => {
+		toast.success(
+			data.message || "User followed successfully"
+		);
+
+		await queryClient.invalidateQueries({
+			queryKey: ["profile", username],
+		});
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Failed to follow user"
+		);
+	},
+});
+
+const unfollowMutation = useMutation({
+	mutationFn: unfollowUser,
+
+	onSuccess: async (data) => {
+		toast.success(
+			data.message || "User unfollowed successfully"
+		);
+
+		await queryClient.invalidateQueries({
+			queryKey: ["profile", username],
+		});
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Failed to unfollow user"
+		);
+	},
+});
+
+const handleFollowToggle = () => {
+	if (user.isFollowing) {
+		unfollowMutation.mutate(user._id);
+	} else {
+		followMutation.mutate(user._id);
+	}
+};
+const isFollowPending =followMutation.isPending || unfollowMutation.isPending;
+
 	if (isLoading) {
 		return (
 			<div className="p-6 text-center text-white/60">
@@ -170,13 +222,30 @@ const handleSaveProfile = ({
 						</div>
 					</div>
 
-					{isOwnProfile && (
+					{isOwnProfile ? (
 						<button
 							type="button"
 							onClick={() => setIsEditModalOpen(true)}
 							className="rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
 						>
 							Edit Profile
+						</button>
+					) : (
+						<button
+							type="button"
+							onClick={handleFollowToggle}
+							disabled={isFollowPending}
+							className={`rounded-full px-5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+								user.isFollowing
+									? "border border-white/20 text-white hover:bg-white/10"
+									: "bg-white text-black hover:bg-white/90"
+							}`}
+						>
+							{isFollowPending
+								? "Loading..."
+								: user.isFollowing
+									? "Following"
+									: "Follow"}
 						</button>
 					)}
 				</div>

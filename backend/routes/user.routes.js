@@ -10,7 +10,7 @@ router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 router.get("/me", protectRoute, getMe);
-router.get("/profile/:username", getUserProfile);
+router.get("/profile/:username", protectRoute, getUserProfile);
 router.put("/update",protectRoute,upload.single("profilePic"),updateProfile);
 router.put("/update-password",protectRoute,updatePassword);
 router.post("/follow/:id",protectRoute,followUser); 

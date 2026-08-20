@@ -101,7 +101,7 @@ const CreatePost = () => {
 			<div className="flex gap-3">
 				{/* Avatar */}
 				<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-black">
-					R
+					##
 				</div>
 
 				<div className="min-w-0 flex-1">
