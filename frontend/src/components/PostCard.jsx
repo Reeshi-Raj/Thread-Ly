@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import { deletePost } from "../services/post.service";
 import { getMe } from "../services/auth.service";
 import { toggleLike } from "../services/post.service";
+import { getPostComments, createComment } from "../services/comment.service";
+import { useState } from "react";
 
 const PostCard = ({ post }) => {
 	const queryClient = useQueryClient();
@@ -77,6 +79,54 @@ const isLiked = post.likes?.some(
 	(id) => id.toString() === currentUserId?.toString()
 );
 
+const [showComments, setShowComments] = useState(false);
+const {
+	data: commentsData,
+	isLoading: commentsLoading,
+	isError: commentsError,
+} = useQuery({
+	queryKey: ["comments", post._id],
+	queryFn: () => getPostComments(post._id),
+	enabled: showComments, // for lazy loading
+});
+
+const [commentText, setCommentText] = useState("");
+const createCommentMutation = useMutation({
+	mutationFn: () =>
+		createComment(post._id, commentText.trim()),
+
+	onSuccess: async () => {
+		setCommentText("");
+
+		await queryClient.invalidateQueries({
+			queryKey: ["comments", post._id],
+		});
+
+		await queryClient.invalidateQueries({
+			queryKey: ["feed"],
+		});
+
+		await queryClient.invalidateQueries({
+			queryKey: ["userPosts"],
+		});
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Failed to create comment"
+		);
+	},
+});
+const handleCreateComment = (e) => {
+	e.preventDefault();
+
+	if (!commentText.trim()) return;
+
+	createCommentMutation.mutate();
+};
+
+
 	if (post.isDeleted) {
 	return (
 		<article className="border-b border-white/10 px-4 py-5">
@@ -107,7 +157,7 @@ const isLiked = post.likes?.some(
 						</p>
 					</div>
 
-					{/* Keep comment count visible */}
+					{/* Keep comments visible */}
 					<div className="mt-4 text-sm text-white/40">
 						💬 {post.comments?.length || 0}
 					</div>
@@ -180,6 +230,7 @@ const isLiked = post.likes?.some(
 
 								<button
 									type="button"
+									onClick={() => setShowComments((prev) => !prev)}
 									className="transition hover:text-white"
 								>
 									💬 {post.comments?.length || 0}
@@ -205,6 +256,91 @@ const isLiked = post.likes?.some(
 									</button>
 								)}
 							</div>
+							{showComments && (
+	<div className="mt-5 border-t border-white/10 pt-4">
+		<h3 className="mb-4 text-sm font-semibold text-white">
+			Comments
+		</h3>
+		
+		<form
+	onSubmit={handleCreateComment}
+	className="mb-5 flex gap-2"
+>
+	<input
+		type="text"
+		value={commentText}
+		onChange={(e) => setCommentText(e.target.value)}
+		placeholder="Write a comment..."
+		maxLength={500}
+		className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/20"
+	/>
+
+	<button
+		type="submit"
+		disabled={
+			!commentText.trim() ||
+			createCommentMutation.isPending
+		}
+		className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+	>
+		{createCommentMutation.isPending
+			? "Posting..."
+			: "Post"}
+	</button>
+</form>
+
+		{commentsLoading && (
+			<p className="text-sm text-white/40">
+				Loading comments...
+			</p>
+		)}
+
+		{commentsError && (
+			<p className="text-sm text-red-400">
+				Failed to load comments.
+			</p>
+		)}
+
+		{!commentsLoading &&
+			!commentsError &&
+			commentsData?.comments?.length === 0 && (
+				<p className="text-sm text-white/40">
+					No comments yet.
+				</p>
+			)}
+
+		{commentsData?.comments?.map((comment) => (
+			<div
+				key={comment._id}
+				className="border-b border-white/5 py-3 last:border-0"
+			>
+				<div className="flex items-start gap-3">
+					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
+						{comment.user?.name
+							?.charAt(0)
+							.toUpperCase()}
+					</div>
+
+					<div>
+						<p className="text-sm font-semibold">
+							{comment.user?.username}
+						</p>
+
+						<p className="mt-1 text-sm text-white/80">
+							{comment.text}
+						</p>
+
+						<p className="mt-2 text-xs text-white/40">
+							♡ {comment.likes?.length || 0}
+							{" · "}
+							{comment.repliesCount || 0} replies
+						</p>
+					</div>
+				</div>
+			</div>
+		))}
+	</div>
+)}
 						</>
 					)}
 				</div>
