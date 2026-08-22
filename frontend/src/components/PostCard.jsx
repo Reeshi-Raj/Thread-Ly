@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 
 import { deletePost } from "../services/post.service";
 import { getMe } from "../services/auth.service";
+import { toggleLike } from "../services/post.service";
 
 const PostCard = ({ post }) => {
 	const queryClient = useQueryClient();
@@ -47,6 +48,34 @@ const currentUserId = meData?.user?._id;
 const isOwner =
 	currentUserId === post.user?._id;
 
+	const likeMutation = useMutation({
+	mutationFn: toggleLike,
+
+	onSuccess: async (data) => {
+		await queryClient.invalidateQueries({
+			queryKey: ["feed"],
+		});
+
+		await queryClient.invalidateQueries({
+			queryKey: ["userPosts"],
+		});
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Failed to like post"
+		);
+	},
+});
+const handleLike = () => {
+	if (post.isDeleted) return;
+
+	likeMutation.mutate(post._id);
+};
+const isLiked = post.likes?.some(
+	(id) => id.toString() === currentUserId?.toString()
+);
 
 	if (post.isDeleted) {
 	return (
@@ -137,9 +166,16 @@ const isOwner =
 							<div className="mt-4 flex items-center gap-6 text-sm text-white/50">
 								<button
 									type="button"
-									className="transition hover:text-white"
+									onClick={handleLike}
+									disabled={likeMutation.isPending}
+									className={`transition disabled:opacity-50 ${
+										isLiked
+											? "text-white"
+											: "text-white/50 hover:text-white"
+									}`}
 								>
-									♡ {post.likes?.length || 0}
+									{isLiked ? "♥" : "♡"}{" "}
+									{post.likes?.length || 0}
 								</button>
 
 								<button
