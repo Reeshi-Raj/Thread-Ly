@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { deletePost } from "../services/post.service";
 import { getMe } from "../services/auth.service";
 import { toggleLike } from "../services/post.service";
-import { getPostComments, createComment } from "../services/comment.service";
+import { getPostComments, createComment, deleteComment} from "../services/comment.service";
 import { useState } from "react";
 
 const PostCard = ({ post }) => {
@@ -124,6 +124,36 @@ const handleCreateComment = (e) => {
 	if (!commentText.trim()) return;
 
 	createCommentMutation.mutate();
+};
+
+const deleteCommentMutation = useMutation({
+	mutationFn: deleteComment,
+
+	onSuccess: async () => {
+		await queryClient.invalidateQueries({
+			queryKey: ["comments", post._id],
+		});
+
+		await queryClient.invalidateQueries({
+			queryKey: ["feed"],
+		});
+
+		await queryClient.invalidateQueries({
+			queryKey: ["userPosts"],
+		});
+
+		toast.success("Comment deleted");
+	},
+
+	onError: (error) => {
+		toast.error(
+			error.response?.data?.message ||
+				"Failed to delete comment"
+		);
+	},
+});
+const handleDeleteComment = (commentId) => {
+	deleteCommentMutation.mutate(commentId);
 };
 
 
@@ -314,29 +344,50 @@ const handleCreateComment = (e) => {
 				key={comment._id}
 				className="border-b border-white/5 py-3 last:border-0"
 			>
-				<div className="flex items-start gap-3">
-					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
-						{comment.user?.name
-							?.charAt(0)
-							.toUpperCase()}
-					</div>
-
-					<div>
-						<p className="text-sm font-semibold">
-							{comment.user?.username}
-						</p>
-
-						<p className="mt-1 text-sm text-white/80">
-							{comment.text}
-						</p>
-
-						<p className="mt-2 text-xs text-white/40">
-							♡ {comment.likes?.length || 0}
-							{" · "}
-							{comment.repliesCount || 0} replies
+				{comment.isDeleted ? (
+					<div className="rounded-xl border border-white/10 bg-white/3 px-3 py-3">
+						<p className="text-sm italic text-white/40">
+							This comment was deleted.
 						</p>
 					</div>
-				</div>
+				) : (
+					<div className="flex items-start justify-between gap-3">
+						<div className="flex items-start gap-3">
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
+								{comment.user?.name
+									?.charAt(0)
+									.toUpperCase()}
+							</div>
+
+							<div className="min-w-0 flex-1">
+								<p className="text-sm font-semibold">
+									{comment.user?.username}
+								</p>
+
+								<p className="mt-1 text-sm text-white/80">
+									{comment.text}
+								</p>
+
+								<div className="mt-2 flex items-center gap-2 text-xs text-white/40">
+									<span>♡ {comment.likes?.length || 0}</span>
+									<span>·</span>
+									<span>{comment.repliesCount || 0} replies</span>
+								</div>
+							</div>
+						</div>
+
+						{comment.user?._id === currentUserId && (
+							<button
+								type="button"
+								onClick={() => handleDeleteComment(comment._id)}
+								disabled={deleteCommentMutation.isPending}
+								className="text-xs text-white/30 transition hover:text-red-400 disabled:opacity-50"
+							>
+								Delete
+							</button>
+						)}
+					</div>
+				)}
 			</div>
 		))}
 	</div>

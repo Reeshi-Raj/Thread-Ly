@@ -21,3 +21,10 @@ export const createComment = async (postId, text) => {
 
 	return response.data;
 };
+export const deleteComment = async (commentId) => {
+	const response = await api.delete(
+		`/comments/${commentId}`
+	);
+
+	return response.data;
+};
