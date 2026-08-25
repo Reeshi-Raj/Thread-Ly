@@ -10,8 +10,8 @@ import protectRoute from "../middlewares/protectRoute.js";
 const router = express.Router();
 
 router.post("/post/:postId",protectRoute,createComment);
-router.get("/post/:postId", getPostComments);
-router.get("/:commentId/replies", getCommentReplies);
+router.get("/post/:postId", protectRoute, getPostComments);
+router.get("/:commentId/replies", protectRoute, getCommentReplies);
 router.post("/:commentId/like",protectRoute,toggleCommentLike);
 router.delete("/:commentId",protectRoute,deleteComment);
 

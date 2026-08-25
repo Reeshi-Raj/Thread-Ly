@@ -316,7 +316,7 @@ export const toggleLike = async (req, res) => {
 			message: alreadyLiked
 				? "Post unliked successfully"
 				: "Post liked successfully",
-			liked: !alreadyLiked,
+			isLiked: !alreadyLiked,
 			likesCount: post.likes.length,
 		});
 	} catch (error) {

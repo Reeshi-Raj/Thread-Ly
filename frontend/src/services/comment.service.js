@@ -28,3 +28,10 @@ export const deleteComment = async (commentId) => {
 
 	return response.data;
 };
+export const toggleCommentLike = async (commentId) => {
+	const response = await api.post(
+		`/comments/${commentId}/like`
+	);
+
+	return response.data;
+};

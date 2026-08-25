@@ -86,12 +86,15 @@ export const createComment = async (req, res) => {
 			"name username profilePic.url"
 		);
 
+		const commentPayload = populatedComment.toObject();
+		commentPayload.isLiked = false;
+
 		return res.status(201).json({
 			success: true,
 			message: parentComment
 				? "Reply added successfully"
 				: "Comment added successfully",
-			comment: populatedComment,
+			comment: commentPayload,
 		});
 	} catch (error) {
 		console.error("Create Comment Error:", error.message);
@@ -154,11 +157,19 @@ export const getPostComments = async (req, res) => {
 			}),
 		]);
 
+		const userId = req.user?._id?.toString();
+		const commentsWithLikeState = comments.map((comment) => ({
+			...comment.toObject(),
+			isLiked: comment.likes.some(
+				(id) => id.toString() === userId
+			),
+		}));
+
 		const totalPages = Math.ceil(totalComments / limit);
 
 		return res.status(200).json({
 			success: true,
-			comments,
+			comments: commentsWithLikeState,
 			pagination: {
 				currentPage: page,
 				limit,
@@ -219,10 +230,17 @@ export const getCommentReplies = async (req, res) => {
 		]);
 
 		const totalPages = Math.ceil(totalReplies / limit);
+		const userId = req.user?._id?.toString();
+		const repliesWithLikeState = replies.map((reply) => ({
+			...reply.toObject(),
+			isLiked: reply.likes.some(
+				(id) => id.toString() === userId
+			),
+		}));
 
 		return res.status(200).json({
 			success: true,
-			replies,
+			replies: repliesWithLikeState,
 			pagination: {
 				currentPage: page,
 				limit,
@@ -281,7 +299,7 @@ export const toggleCommentLike = async (req, res) => {
 			message: alreadyLiked
 				? "Comment unliked successfully"
 				: "Comment liked successfully",
-			liked: !alreadyLiked,
+			isLiked: !alreadyLiked,
 			likesCount: comment.likes.length,
 		});
 	} catch (error) {
