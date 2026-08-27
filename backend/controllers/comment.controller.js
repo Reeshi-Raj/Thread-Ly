@@ -3,6 +3,8 @@ import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
 
 export const createComment = async (req, res) => {
+	const session = await mongoose.startSession();
+
 	try {
 		const { postId } = req.params;
 		const { text, parentComment } = req.body;
@@ -24,7 +26,7 @@ export const createComment = async (req, res) => {
 		}
 
 		// Check whether post exists
-		const post = await Post.findById(postId);
+		const post = await Post.findById(postId).session(session);
 
 		if (!post) {
 			return res.status(404).json({
@@ -42,7 +44,7 @@ export const createComment = async (req, res) => {
 				});
 			}
 
-			const parent = await Comment.findById(parentComment);
+			const parent = await Comment.findById(parentComment).session(session);
 
 			if (!parent) {
 				return res.status(404).json({
@@ -58,33 +60,48 @@ export const createComment = async (req, res) => {
 					message: "Parent comment does not belong to this post",
 				});
 			}
+			if (parent.parentComment) {
+				return res.status(400).json({
+					success: false,
+					message: "Replies cannot have replies",
+				});
+			}
 		}
 
-		// Create comment
-		const comment = await Comment.create({
-			user: req.user._id,
-			post: postId,
-			parentComment: parentComment || null,
-			text: text.trim(),
+		let comment;
+		await session.withTransaction(async () => {
+			comment = await Comment.create(
+				[
+					{
+						user: req.user._id,
+						post: postId,
+						parentComment: parentComment || null,
+						text: text.trim(),
+					},
+				],
+				{ session }
+			);
+
+			comment = comment[0];
+
+			await Post.findByIdAndUpdate(
+				postId,
+				{ $push: { comments: comment._id } },
+				{ session, returnDocument: "after" }
+			);
+
+			if (parentComment) {
+				await Comment.findByIdAndUpdate(
+					parentComment,
+					{ $inc: { repliesCount: 1 } },
+					{ session, returnDocument: "after" }
+				);
+			}
 		});
 
-		// Add comment ID to Post
-		post.comments.push(comment._id);
-		await post.save();
-
-		// If this is a reply, increment parent's replies count
-		if (parentComment) {
-			await Comment.findByIdAndUpdate(parentComment, {
-				$inc: {
-					repliesCount: 1,
-				},
-			});
-		}
-
-		const populatedComment = await Comment.findById(comment._id).populate(
-			"user",
-			"name username profilePic.url"
-		);
+		const populatedComment = await Comment.findById(comment._id)
+			.populate("user", "name username profilePic.url")
+			.session(session);
 
 		const commentPayload = populatedComment.toObject();
 		commentPayload.isLiked = false;
@@ -103,15 +120,9 @@ export const createComment = async (req, res) => {
 			success: false,
 			message: "Internal Server Error",
 		});
+	} finally {
+		await session.endSession();
 	}
-    // currently updating three documents during reply creation:
- //Create Comment
-       //↓
- // Post.comments.push()
-       //↓
- //ParentComment.repliesCount++
-//This is another consistency issue similar to the Cloudinary.
-// these all are mongoDB transactions so we can use transactions to ensure that either all three operations succeed or none of them do. This will help maintain data integrity and prevent orphaned comments or incorrect counts.
 };
 export const getPostComments = async (req, res) => {
 	try {

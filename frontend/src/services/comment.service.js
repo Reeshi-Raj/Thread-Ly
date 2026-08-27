@@ -13,10 +13,14 @@ export const getPostComments = async (postId, page = 1, limit = 10) => {
 
 	return response.data;
 };
-export const createComment = async (postId, text) => {
+export const createComment = async (
+	postId,
+	text,
+	parentComment = null
+) => {
 	const response = await api.post(
 		`/comments/post/${postId}`,
-		{ text }
+		{ text, parentComment }
 	);
 
 	return response.data;
@@ -33,5 +37,21 @@ export const toggleCommentLike = async (commentId) => {
 		`/comments/${commentId}/like`
 	);
 
+	return response.data;
+};
+export const getCommentReplies = async (
+	commentId,
+	page = 1,
+	limit = 10
+) => {
+	const response = await api.get(
+		`/comments/${commentId}/replies`,
+		{
+			params: {
+				page,
+				limit,
+			},
+		}
+	);
 	return response.data;
 };
