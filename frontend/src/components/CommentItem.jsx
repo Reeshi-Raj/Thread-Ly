@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-import { createComment, getCommentReplies } from "../services/comment.service";
+import { getMe } from "../services/auth.service";
+import {
+	createComment,
+	deleteComment,
+	getCommentReplies,
+	toggleCommentLike,
+} from "../services/comment.service";
 import { useState } from "react";
 
 const CommentItem = ({ comment }) => {
@@ -9,6 +15,17 @@ const CommentItem = ({ comment }) => {
 	const [showReplies, setShowReplies] = useState(false);
 	const [showReplyForm, setShowReplyForm] = useState(false);
 	const [replyText, setReplyText] = useState("");
+
+	const { data: meData } = useQuery({
+		queryKey: ["me"],
+		queryFn: getMe,
+	});
+	const currentUserId = meData?.user?._id;
+	const isCommentOwner =
+		currentUserId && comment.user?._id
+			? currentUserId.toString() === comment.user._id.toString()
+			: false;
+
 	const postId =
 		typeof comment.post === "string"
 			? comment.post
@@ -44,12 +61,68 @@ const CommentItem = ({ comment }) => {
 		},
 	});
 
+	const toggleLikeMutation = useMutation({
+		mutationFn: toggleCommentLike,
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["replies", comment._id],
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["comments", postId],
+			});
+		},
+		onError: (error) => {
+			toast.error(
+				error.response?.data?.message ||
+					"Failed to update like"
+			);
+		},
+	});
+
 	const handleCreateReply = (e) => {
 		e.preventDefault();
 
 		if (!replyText.trim() || !postId) return;
 
 		createReplyMutation.mutate();
+	};
+
+	const handleToggleCommentLike = () => {
+		if (comment.isDeleted) return;
+		toggleLikeMutation.mutate(comment._id);
+	};
+
+	const handleToggleReplyLike = (reply) => {
+		if (reply.isDeleted) return;
+		toggleLikeMutation.mutate(reply._id);
+	};
+
+	const deleteCommentMutation = useMutation({
+		mutationFn: (commentId) => deleteComment(commentId),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["replies", comment._id],
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["comments", postId],
+			});
+		},
+		onError: (error) => {
+			toast.error(
+				error.response?.data?.message ||
+					"Failed to delete comment"
+			);
+		},
+	});
+
+	const handleDeleteComment = () => {
+		if (!window.confirm("Delete this comment?")) return;
+		deleteCommentMutation.mutate(comment._id);
+	};
+
+	const handleDeleteReply = (reply) => {
+		if (!window.confirm("Delete this reply?")) return;
+		deleteCommentMutation.mutate(reply._id);
 	};
 
 	return (
@@ -78,7 +151,12 @@ const CommentItem = ({ comment }) => {
 					)}
 
 					<div className="mt-2 flex items-center gap-4 text-xs text-white/40">
-						<button type="button">
+						<button
+							type="button"
+							onClick={handleToggleCommentLike}
+							disabled={toggleLikeMutation.isPending || comment.isDeleted}
+							className="transition hover:text-white disabled:opacity-50"
+						>
 							{comment.isLiked ? "♥" : "♡"}{" "}
 							{comment.likes?.length || 0}
 						</button>
@@ -91,6 +169,17 @@ const CommentItem = ({ comment }) => {
 						>
 							Reply
 						</button>
+
+						{isCommentOwner && !comment.isDeleted && (
+							<button
+								type="button"
+								onClick={handleDeleteComment}
+								disabled={deleteCommentMutation.isPending}
+								className="text-red-300 transition hover:text-red-200 disabled:opacity-50"
+							>
+								Delete
+							</button>
+						)}
 
 						{comment.repliesCount > 0 && (
 							<button
@@ -170,6 +259,29 @@ const CommentItem = ({ comment }) => {
 									{reply.text}
 								</p>
 							)}
+
+							<div className="mt-2 flex items-center gap-4 text-[11px] text-white/40">
+								<button
+									type="button"
+									onClick={() => handleToggleReplyLike(reply)}
+									disabled={toggleLikeMutation.isPending || reply.isDeleted}
+									className="transition hover:text-white disabled:opacity-50"
+								>
+									{reply.isLiked ? "♥" : "♡"}{" "}
+									{reply.likes?.length || 0}
+								</button>
+
+								{meData?.user?._id && reply.user?._id && meData.user._id.toString() === reply.user._id.toString() && (
+									<button
+										type="button"
+										onClick={() => handleDeleteReply(reply)}
+										disabled={deleteCommentMutation.isPending}
+										className="text-red-300 transition hover:text-red-200 disabled:opacity-50"
+									>
+										Delete
+									</button>
+								)}
+							</div>
 						</div>
 					))}
 				</div>

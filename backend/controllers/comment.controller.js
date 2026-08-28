@@ -350,7 +350,6 @@ export const deleteComment = async (req, res) => {
 			});
 		}
 
-		// Only comment owner can delete it
 		if (
 			comment.user.toString() !==
 			req.user._id.toString()
@@ -364,7 +363,27 @@ export const deleteComment = async (req, res) => {
 			});
 		}
 
-		// Soft delete the comment
+		if (comment.parentComment) {
+			await Comment.findByIdAndDelete(commentId, { session });
+			await Post.findByIdAndUpdate(
+				comment.post,
+				{ $pull: { comments: commentId } },
+				{ session }
+			);
+			await Comment.findByIdAndUpdate(
+				comment.parentComment,
+				{ $inc: { repliesCount: -1 } },
+				{ session }
+			);
+
+			await session.commitTransaction();
+
+			return res.status(200).json({
+				success: true,
+				message: "Reply deleted successfully",
+			});
+		}
+
 		await Comment.findByIdAndUpdate(
 			commentId,
 			{
@@ -375,19 +394,6 @@ export const deleteComment = async (req, res) => {
 			},
 			{ session }
 		);
-
-		// If this is a reply, decrease parent's replies count
-		if (comment.parentComment) {
-			await Comment.findByIdAndUpdate(
-				comment.parentComment,
-				{
-					$inc: {
-						repliesCount: -1,
-					},
-				},
-				{ session }
-			);
-		}
 
 		await session.commitTransaction();
 

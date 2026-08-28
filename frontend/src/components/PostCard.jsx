@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { deletePost } from "../services/post.service";
 import { getMe } from "../services/auth.service";
 import { toggleLike } from "../services/post.service";
-import { getPostComments, createComment, deleteComment,toggleCommentLike,getCommentReplies} from "../services/comment.service";
+import { getPostComments, createComment, deleteComment } from "../services/comment.service";
 import { useState } from "react";
 import CommentItem from "./CommentItem";
 
@@ -127,52 +127,6 @@ const handleCreateComment = (e) => {
 	createCommentMutation.mutate();
 };
 
-const deleteCommentMutation = useMutation({
-	mutationFn: deleteComment,
-
-	onSuccess: async () => {
-		await queryClient.invalidateQueries({
-			queryKey: ["comments", post._id],
-		});
-
-		await queryClient.invalidateQueries({
-			queryKey: ["feed"],
-		});
-
-		await queryClient.invalidateQueries({
-			queryKey: ["userPosts"],
-		});
-
-		toast.success("Comment deleted");
-	},
-
-	onError: (error) => {
-		toast.error(
-			error.response?.data?.message ||
-				"Failed to delete comment"
-		);
-	},
-});
-const handleDeleteComment = (commentId) => {
-	deleteCommentMutation.mutate(commentId);
-};
-
-const toggleCommentLikeMutation = useMutation({
-	mutationFn: toggleCommentLike,
-
-	onSuccess: async () => {
-		await queryClient.invalidateQueries({
-			queryKey: ["comments", post._id],
-		});
-	},
-
-	onError: (error) => {
-		toast.error(
-			error.response?.data?.message ||
-				"Failed to update comment like"
-		);
-	},
-});
 
 	if (post.isDeleted) {
 	return (
