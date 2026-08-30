@@ -7,6 +7,7 @@ import commentRoutes from "./routes/comment.routes.js";
 import { notFound } from "./middlewares/error.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import notificationRoutes from "./routes/notification.routes.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use(notFound);
 
 const PORT = process.env.PORT || 5000;

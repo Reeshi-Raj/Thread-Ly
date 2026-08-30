@@ -4,6 +4,7 @@ import generateToken from "../utils/generateToken.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import deleteFromCloudinary from "../utils/deleteFromCloudinary.js";
 import mongoose from "mongoose";
+import { createNotification } from "../utils/createNotification.js";
 
 export const signupUser = async (req, res) => {
 	try{
@@ -411,6 +412,12 @@ export const followUser = async (req, res) => {
 		await userToFollow.save({ session });
 
 		await session.commitTransaction();
+
+		await createNotification({
+			recipient: userToFollow._id,
+			sender: currentUser._id,
+			type: "FOLLOW",
+		});
 
 		return res.status(200).json({
 			success: true,

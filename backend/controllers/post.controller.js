@@ -3,6 +3,7 @@ import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import deleteFromCloudinary from "../utils/deleteFromCloudinary.js";
+import { createNotification } from "../utils/createNotification.js";
 
 export const createPost = async (req, res) => {
 	let uploadedImage = null;
@@ -310,6 +311,15 @@ export const toggleLike = async (req, res) => {
 		}
 
 		await post.save();
+		
+		if (!alreadyLiked) {
+		await createNotification({
+			recipient: post.user,
+			sender: userId,
+			type: "LIKE",
+			post: post._id,
+		});
+}
 
 		return res.status(200).json({
 			success: true,

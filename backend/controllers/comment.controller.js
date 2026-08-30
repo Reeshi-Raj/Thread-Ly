@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
+import { createNotification } from "../utils/createNotification.js";
 
 export const createComment = async (req, res) => {
 	const session = await mongoose.startSession();
@@ -36,6 +37,7 @@ export const createComment = async (req, res) => {
 		}
 
 		// If parentComment is provided, validate it
+		let parent =null;
 		if (parentComment) {
 			if (!mongoose.Types.ObjectId.isValid(parentComment)) {
 				return res.status(400).json({
@@ -44,7 +46,7 @@ export const createComment = async (req, res) => {
 				});
 			}
 
-			const parent = await Comment.findById(parentComment).session(session);
+			parent = await Comment.findById(parentComment).session(session);
 
 			if (!parent) {
 				return res.status(404).json({
@@ -96,6 +98,22 @@ export const createComment = async (req, res) => {
 					{ $inc: { repliesCount: 1 } },
 					{ session, returnDocument: "after" }
 				);
+
+				await createNotification({
+					recipient: parent.user,
+					sender: req.user._id,
+					type: "REPLY",
+					post: postId,
+					comment: comment._id,
+				});
+			} else {
+				await createNotification({
+					recipient: post.user,
+					sender: req.user._id,
+					type: "COMMENT",
+					post: postId,
+					comment: comment._id,
+				});
 			}
 		});
 
@@ -304,6 +322,16 @@ export const toggleCommentLike = async (req, res) => {
 		}
 
 		await comment.save();
+
+		if (!alreadyLiked) {
+			await createNotification({
+				recipient: comment.user,
+				sender: userId,
+				type: "LIKE",
+				post: comment.post,
+				comment: comment._id,
+			});
+		}
 
 		return res.status(200).json({
 			success: true,
