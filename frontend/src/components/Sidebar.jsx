@@ -61,7 +61,16 @@ const logoutMutation = useMutation({
 					>
 						Home
 					</Link>
-
+					<Link
+						to="/notifications"
+						className={`block rounded-xl px-4 py-3 text-sm font-medium transition ${
+							isActive("/notifications")
+								? "bg-white/10 text-white"
+								: "text-white/60 hover:bg-white/5 hover:text-white"
+						}`}
+					>
+						Notifications
+					</Link>
 					<Link
 						to="/search"
 						className="block rounded-xl px-4 py-3 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"

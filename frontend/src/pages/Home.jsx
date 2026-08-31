@@ -1,10 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import { getFeed } from "../services/post.service";
 
 const Home = () => {
+	const [searchParams] = useSearchParams();
+	const targetPostId = searchParams.get("post");
+	const targetCommentId = searchParams.get("comment");
+
 	const {
 		data,
 		isLoading,
@@ -81,6 +86,8 @@ const Home = () => {
 					<PostCard
 						key={post._id}
 						post={post}
+						targetPostId={targetPostId}
+						targetCommentId={targetCommentId}
 					/>
 				))
 			)}

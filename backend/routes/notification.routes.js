@@ -19,3 +19,5 @@ router.patch(
 	protectRoute,
 	markAllNotificationsAsRead
 );
+
+export default router;

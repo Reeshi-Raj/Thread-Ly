@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { getMe } from "../services/auth.service";
@@ -8,9 +12,9 @@ import {
 	getCommentReplies,
 	toggleCommentLike,
 } from "../services/comment.service";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const CommentItem = ({ comment }) => {
+const CommentItem = ({ comment, targetCommentId }) => {
 	const queryClient = useQueryClient();
 	const [showReplies, setShowReplies] = useState(false);
 	const [showReplyForm, setShowReplyForm] = useState(false);
@@ -25,6 +29,20 @@ const CommentItem = ({ comment }) => {
 		currentUserId && comment.user?._id
 			? currentUserId.toString() === comment.user._id.toString()
 			: false;
+
+	useEffect(() => {
+		if (targetCommentId === comment._id) {
+			setShowReplies(true);
+		}
+	}, [targetCommentId, comment._id]);
+
+	useEffect(() => {
+		if (!repliesData?.replies?.length) return;
+
+		if (repliesData.replies.some((reply) => reply._id === targetCommentId)) {
+			setShowReplies(true);
+		}
+	}, [repliesData, targetCommentId]);
 
 	const postId =
 		typeof comment.post === "string"
@@ -126,7 +144,10 @@ const CommentItem = ({ comment }) => {
 	};
 
 	return (
-		<div className="py-3">
+		<div
+			className={`py-3 ${targetCommentId === comment._id ? "rounded-lg ring-2 ring-white/50" : ""}`}
+			data-comment-id={comment._id}
+		>
 			{/* Comment */}
 			<div className="flex items-start gap-3">
 				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
@@ -244,7 +265,8 @@ const CommentItem = ({ comment }) => {
 					{repliesData?.replies?.map((reply) => (
 						<div
 							key={reply._id}
-							className="py-2"
+							className={`py-2 ${targetCommentId === reply._id ? "rounded-lg ring-2 ring-white/50" : ""}`}
+							data-reply-id={reply._id}
 						>
 							<p className="text-xs font-semibold">
 								{reply.user?.username}

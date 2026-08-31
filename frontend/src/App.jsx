@@ -12,6 +12,7 @@ import Signup from "./pages/Signup";
 import Create from "./pages/Create";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
+import NotificationsPage from "./pages/NotificationsPage";
 
 const App = () => {
 	return (
@@ -23,6 +24,7 @@ const App = () => {
 						<Route path="/" element={<Home />} />
 						<Route path="/create" element={<Create />} />
 						<Route path="/profile/:username" element={<Profile />} />
+						<Route path="/notifications" element={<NotificationsPage />}/>
 					</Route>
 				</Route>
 

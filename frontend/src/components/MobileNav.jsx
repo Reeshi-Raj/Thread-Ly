@@ -49,6 +49,16 @@ const MobileNav = () => {
 				>
 					Home
 				</Link>
+				<Link
+					to="/notifications"
+					className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
+						isActive("/notifications")
+							? "bg-white/10 text-white"
+							: "text-white/50"
+					}`}
+				>
+					Notifications
+				</Link>
 
 				<Link
 					to="/search"

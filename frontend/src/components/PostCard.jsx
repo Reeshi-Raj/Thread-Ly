@@ -1,16 +1,25 @@
 import { Link } from "react-router-dom";
-import { useQuery,useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { deletePost } from "../services/post.service";
 import { getMe } from "../services/auth.service";
 import { toggleLike } from "../services/post.service";
-import { getPostComments, createComment, deleteComment } from "../services/comment.service";
-import { useState } from "react";
+import {
+	getPostComments,
+	createComment,
+	deleteComment,
+} from "../services/comment.service";
+import { useEffect, useRef, useState } from "react";
 import CommentItem from "./CommentItem";
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, targetPostId, targetCommentId }) => {
 	const queryClient = useQueryClient();
+	const postRef = useRef(null);
 
 const deleteMutation = useMutation({
 	mutationFn: deletePost,
@@ -81,6 +90,53 @@ const isLiked = post.likes?.some(
 );
 
 const [showComments, setShowComments] = useState(false);
+const isTargetPost = targetPostId === post._id;
+
+useEffect(() => {
+	if (isTargetPost && targetCommentId) {
+		setShowComments(true);
+	}
+}, [isTargetPost, targetCommentId]);
+
+useEffect(() => {
+	if (!isTargetPost) return;
+
+	const timer = setTimeout(() => {
+		postRef.current?.scrollIntoView({
+			behavior: "smooth",
+			block: "center",
+		});
+
+		if (targetCommentId) {
+			const targetNode = document.querySelector(
+				`[data-comment-id="${targetCommentId}"], [data-reply-id="${targetCommentId}"]`
+			);
+
+			if (targetNode) {
+				targetNode.scrollIntoView({
+					behavior: "smooth",
+					block: "center",
+				});
+				targetNode.classList.add(
+					"ring-2",
+					"ring-white/50",
+					"rounded-lg"
+				);
+
+				setTimeout(() => {
+					targetNode.classList.remove(
+						"ring-2",
+						"ring-white/50",
+						"rounded-lg"
+					);
+				}, 2000);
+			}
+		}
+	}, 200);
+
+	return () => clearTimeout(timer);
+}, [isTargetPost, targetCommentId, showComments, commentsData]);
+
 const {
 	data: commentsData,
 	isLoading: commentsLoading,
@@ -314,6 +370,7 @@ const handleCreateComment = (e) => {
 			<CommentItem
 				key={comment._id}
 				comment={comment}
+				targetCommentId={targetCommentId}
 			/>
 		))}
 	</div>
