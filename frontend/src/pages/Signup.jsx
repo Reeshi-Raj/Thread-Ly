@@ -66,7 +66,7 @@ const Signup = () => {
 				</h1>
 
 				<p className="mt-2 text-sm text-white/50">
-					Join Threads Clone today.
+					Join Thread-Ly today.
 				</p>
 			</div>
 

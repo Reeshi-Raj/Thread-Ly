@@ -59,7 +59,7 @@ const Login = () => {
 				</h1>
 
 				<p className="mt-2 text-sm text-white/50">
-					Login to continue to Threads Clone.
+					Login to continue to Thread-Ly.
 				</p>
 			</div>
 

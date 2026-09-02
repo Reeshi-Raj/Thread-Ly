@@ -1,24 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
+
+:root {
+	--bg: #050505;
+	--bg-soft: #0f0f10;
+	--panel: rgba(18, 18, 18, 0.9);
+	--panel-strong: rgba(24, 24, 24, 0.96);
+	--line: rgba(255, 255, 255, 0.08);
+	--text: #f5f5f5;
+	--muted: rgba(255, 255, 255, 0.64);
+	--soft: rgba(255, 255, 255, 0.42);
+	--white: #ffffff;
+	--shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
 
 * {
 	box-sizing: border-box;
 }
 
 html {
-	background: #050505;
-	color: #f5f5f5;
+	scroll-behavior: smooth;
+	background:
+		radial-gradient(circle at top, rgba(255,255,255,0.06), transparent 28%),
+		radial-gradient(circle at bottom, rgba(255,255,255,0.04), transparent 18%),
+		var(--bg);
+	color: var(--text);
 }
 
 body {
 	margin: 0;
 	min-width: 320px;
-	background: #050505;
-	color: #f5f5f5;
-	font-family: Arial, Helvetica, sans-serif;
+	background: var(--bg);
+	color: var(--text);
+	font-family: "Inter", "Segoe UI", sans-serif;
+	text-rendering: optimizeLegibility;
 }
 
 button,
 input,
 textarea {
 	font: inherit;
+}
+
+img {
+	display: block;
+	max-width: 100%;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+}
+
+::selection {
+	background: rgba(255, 255, 255, 0.18);
+}
+
+.logo-mark {
+	font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+	letter-spacing: -0.08em;
 }

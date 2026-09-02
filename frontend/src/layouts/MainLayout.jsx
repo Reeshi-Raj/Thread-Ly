@@ -9,10 +9,10 @@ const MainLayout = () => {
 		<div className="min-h-screen bg-[#050505] text-white">
 			<Navbar />
 
-			<div className="mx-auto flex min-h-screen max-w-7xl">
-				<Sidebar/>
+			<div className="mx-auto max-w-7xl">
+				<Sidebar />
 
-				<main className="min-w-0 flex-1">
+				<main className="min-w-0 lg:ml-72">
 					<Outlet />
 				</main>
 			</div>

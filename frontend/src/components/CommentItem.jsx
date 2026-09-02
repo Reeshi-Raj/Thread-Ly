@@ -30,20 +30,6 @@ const CommentItem = ({ comment, targetCommentId }) => {
 			? currentUserId.toString() === comment.user._id.toString()
 			: false;
 
-	useEffect(() => {
-		if (targetCommentId === comment._id) {
-			setShowReplies(true);
-		}
-	}, [targetCommentId, comment._id]);
-
-	useEffect(() => {
-		if (!repliesData?.replies?.length) return;
-
-		if (repliesData.replies.some((reply) => reply._id === targetCommentId)) {
-			setShowReplies(true);
-		}
-	}, [repliesData, targetCommentId]);
-
 	const postId =
 		typeof comment.post === "string"
 			? comment.post
@@ -57,6 +43,20 @@ const CommentItem = ({ comment, targetCommentId }) => {
 		queryFn: () => getCommentReplies(comment._id),
 		enabled: showReplies,
 	});
+
+	useEffect(() => {
+		if (targetCommentId === comment._id) {
+			setShowReplies(true);
+		}
+	}, [targetCommentId, comment._id]);
+
+	useEffect(() => {
+		if (!repliesData?.replies?.length) return;
+
+		if (repliesData.replies.some((reply) => reply._id === targetCommentId)) {
+			setShowReplies(true);
+		}
+	}, [repliesData, targetCommentId]);
 
 	const createReplyMutation = useMutation({
 		mutationFn: () =>
@@ -145,19 +145,19 @@ const CommentItem = ({ comment, targetCommentId }) => {
 
 	return (
 		<div
-			className={`py-3 ${targetCommentId === comment._id ? "rounded-lg ring-2 ring-white/50" : ""}`}
+			className={`rounded-2xl border border-transparent px-2 py-3 transition ${targetCommentId === comment._id ? "border-white/20 bg-white/3 ring-2 ring-white/20" : ""}`}
 			data-comment-id={comment._id}
 		>
 			{/* Comment */}
 			<div className="flex items-start gap-3">
-				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
+				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-white to-white/80 text-[11px] font-bold text-black shadow-[0_6px_12px_rgba(255,255,255,0.1)]">
 					{comment.user?.name
 						?.charAt(0)
 						.toUpperCase()}
 				</div>
 
-				<div className="min-w-0 flex-1">
-					<p className="text-sm font-semibold">
+				<div className="min-w-0 flex-1 rounded-2xl border border-white/5 bg-white/1.5 px-3 py-2.5">
+					<p className="text-sm font-semibold text-white">
 						{comment.user?.username}
 					</p>
 
@@ -171,24 +171,25 @@ const CommentItem = ({ comment, targetCommentId }) => {
 						</p>
 					)}
 
-					<div className="mt-2 flex items-center gap-4 text-xs text-white/40">
+					<div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-white/40">
 						<button
 							type="button"
 							onClick={handleToggleCommentLike}
 							disabled={toggleLikeMutation.isPending || comment.isDeleted}
-							className="transition hover:text-white disabled:opacity-50"
+							className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/2 px-2.5 py-1 transition hover:border-white/20 hover:text-white disabled:opacity-50"
 						>
-							{comment.isLiked ? "♥" : "♡"}{" "}
-							{comment.likes?.length || 0}
+							<span>{comment.isLiked ? "♥" : "♡"}</span>
+							<span>{comment.likes?.length || 0}</span>
 						</button>
 
 						<button
 							type="button"
 							onClick={() => setShowReplyForm((prev) => !prev)}
-							className="hover:text-white"
+							className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/2 px-2.5 py-1 transition hover:border-white/20 hover:text-white"
 							disabled={comment.isDeleted}
 						>
-							Reply
+							<span>↩</span>
+							<span>Reply</span>
 						</button>
 
 						{isCommentOwner && !comment.isDeleted && (
@@ -196,7 +197,7 @@ const CommentItem = ({ comment, targetCommentId }) => {
 								type="button"
 								onClick={handleDeleteComment}
 								disabled={deleteCommentMutation.isPending}
-								className="text-red-300 transition hover:text-red-200 disabled:opacity-50"
+								className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/5 px-2.5 py-1 text-red-300 transition hover:border-red-400/40 hover:text-red-200 disabled:opacity-50"
 							>
 								Delete
 							</button>
@@ -205,47 +206,31 @@ const CommentItem = ({ comment, targetCommentId }) => {
 						{comment.repliesCount > 0 && (
 							<button
 								type="button"
-								onClick={() =>
-									setShowReplies(
-										(prev) => !prev
-									)
-								}
-								className="hover:text-white"
+								onClick={() => setShowReplies((prev) => !prev)}
+								className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/2 px-2.5 py-1 transition hover:border-white/20 hover:text-white"
 							>
-								{showReplies
-									? "Hide replies"
-									: `${comment.repliesCount} replies`}
+								{showReplies ? "Hide replies" : `${comment.repliesCount} replies`}
 							</button>
 						)}
 					</div>
 
 					{showReplyForm && !comment.isDeleted && (
-						<form
-							onSubmit={handleCreateReply}
-							className="mt-3"
-						>
+						<form onSubmit={handleCreateReply} className="mt-3">
 							<div className="flex gap-2">
 								<input
 									type="text"
 									value={replyText}
-									onChange={(e) =>
-										setReplyText(e.target.value)
-									}
+									onChange={(e) => setReplyText(e.target.value)}
 									placeholder="Write a reply..."
-									className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none"
+									className="flex-1 rounded-2xl border border-white/10 bg-white/2 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-white/20 focus:outline-none"
 									autoFocus
 								/>
 								<button
 									type="submit"
-									disabled={
-										createReplyMutation.isPending ||
-										!replyText.trim()
-									}
-									className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+									disabled={createReplyMutation.isPending || !replyText.trim()}
+									className="rounded-2xl bg-white px-3.5 py-2 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
 								>
-									{createReplyMutation.isPending
-										? "Sending..."
-										: "Reply"}
+									{createReplyMutation.isPending ? "Sending..." : "Reply"}
 								</button>
 							</div>
 						</form>
@@ -255,7 +240,7 @@ const CommentItem = ({ comment, targetCommentId }) => {
 
 			{/* Replies */}
 			{showReplies && (
-				<div className="ml-11 mt-2 border-l border-white/10 pl-4">
+				<div className="ml-11 mt-3 border-l border-white/10 pl-4">
 					{isLoading && (
 						<p className="py-2 text-xs text-white/40">
 							Loading replies...
@@ -265,10 +250,10 @@ const CommentItem = ({ comment, targetCommentId }) => {
 					{repliesData?.replies?.map((reply) => (
 						<div
 							key={reply._id}
-							className={`py-2 ${targetCommentId === reply._id ? "rounded-lg ring-2 ring-white/50" : ""}`}
+							className={`rounded-2xl border border-transparent px-2 py-2 transition ${targetCommentId === reply._id ? "border-white/20 bg-white/3 ring-2 ring-white/20" : ""}`}
 							data-reply-id={reply._id}
 						>
-							<p className="text-xs font-semibold">
+							<p className="text-xs font-semibold text-white/90">
 								{reply.user?.username}
 							</p>
 
@@ -282,15 +267,15 @@ const CommentItem = ({ comment, targetCommentId }) => {
 								</p>
 							)}
 
-							<div className="mt-2 flex items-center gap-4 text-[11px] text-white/40">
+							<div className="mt-2 flex items-center gap-2 text-[11px] text-white/40">
 								<button
 									type="button"
 									onClick={() => handleToggleReplyLike(reply)}
 									disabled={toggleLikeMutation.isPending || reply.isDeleted}
-									className="transition hover:text-white disabled:opacity-50"
+									className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/2 px-2 py-1 transition hover:border-white/20 hover:text-white disabled:opacity-50"
 								>
-									{reply.isLiked ? "♥" : "♡"}{" "}
-									{reply.likes?.length || 0}
+									<span>{reply.isLiked ? "♥" : "♡"}</span>
+									<span>{reply.likes?.length || 0}</span>
 								</button>
 
 								{meData?.user?._id && reply.user?._id && meData.user._id.toString() === reply.user._id.toString() && (
@@ -298,7 +283,7 @@ const CommentItem = ({ comment, targetCommentId }) => {
 										type="button"
 										onClick={() => handleDeleteReply(reply)}
 										disabled={deleteCommentMutation.isPending}
-										className="text-red-300 transition hover:text-red-200 disabled:opacity-50"
+										className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/5 px-2 py-1 text-red-300 transition hover:border-red-400/40 hover:text-red-200 disabled:opacity-50"
 									>
 										Delete
 									</button>

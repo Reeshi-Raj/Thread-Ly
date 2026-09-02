@@ -1,387 +1,297 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import {
-	useQuery,
-	useMutation,
-	useQueryClient,
+  useQuery,
+  useMutation,
+  useQueryClient,
 } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-
-import { deletePost } from "../services/post.service";
-import { getMe } from "../services/auth.service";
-import { toggleLike } from "../services/post.service";
 import {
-	getPostComments,
-	createComment,
-	deleteComment,
-} from "../services/comment.service";
+  FiHeart,
+  FiMessageCircle,
+  FiShare2,
+  FiTrash2,
+} from "react-icons/fi";
+
+import { deletePost, toggleLike } from "../services/post.service";
+import { getMe } from "../services/auth.service";
+import { getPostComments, createComment } from "../services/comment.service";
 import { useEffect, useRef, useState } from "react";
 import CommentItem from "./CommentItem";
 
 const PostCard = ({ post, targetPostId, targetCommentId }) => {
-	const queryClient = useQueryClient();
-	const postRef = useRef(null);
+  const queryClient = useQueryClient();
+  const postRef = useRef(null);
 
-const deleteMutation = useMutation({
-	mutationFn: deletePost,
+  const deleteMutation = useMutation({
+    mutationFn: deletePost,
+    onSuccess: async (data) => {
+      toast.success(data.message || "Post deleted successfully");
+      await queryClient.invalidateQueries({ queryKey: ["feed"] });
+      await queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to delete post");
+    },
+  });
 
-	onSuccess: async (data) => {
-		toast.success(
-			data.message || "Post deleted successfully"
-		);
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      deleteMutation.mutate(post._id);
+    }
+  };
 
-		await queryClient.invalidateQueries({
-			queryKey: ["feed"],
-		});
+  const { data: meData } = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+  });
 
-		await queryClient.invalidateQueries({
-			queryKey: ["userPosts"],
-		});
-	},
+  const currentUserId = meData?.user?._id;
+  const isOwner = currentUserId === post.user?._id;
 
-	onError: (error) => {
-		toast.error(
-			error.response?.data?.message ||
-				"Failed to delete post"
-		);
-	},
-});
-const handleDelete = () => {
-	if (window.confirm("Are you sure you want to delete this post?")) {
-		deleteMutation.mutate(post._id);
-	}
-};
-const { data: meData } = useQuery({
-	queryKey: ["me"],
-	queryFn: getMe,
-});
+  const likeMutation = useMutation({
+    mutationFn: toggleLike,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["feed"] });
+      await queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to like post");
+    },
+  });
 
-const currentUserId = meData?.user?._id;
+  const handleLike = () => {
+    if (post.isDeleted) return;
+    likeMutation.mutate(post._id);
+  };
 
-const isOwner =
-	currentUserId === post.user?._id;
+  const isLiked = post.likes?.some(
+    (id) => id.toString() === currentUserId?.toString()
+  );
 
-	const likeMutation = useMutation({
-	mutationFn: toggleLike,
+  const [showComments, setShowComments] = useState(false);
+  const isTargetPost = targetPostId === post._id;
 
-	onSuccess: async (data) => {
-		await queryClient.invalidateQueries({
-			queryKey: ["feed"],
-		});
+  useEffect(() => {
+    if (isTargetPost && targetCommentId) {
+      setShowComments(true);
+    }
+  }, [isTargetPost, targetCommentId]);
 
-		await queryClient.invalidateQueries({
-			queryKey: ["userPosts"],
-		});
-	},
+  const {
+    data: commentsData,
+    isLoading: commentsLoading,
+    isError: commentsError,
+  } = useQuery({
+    queryKey: ["comments", post._id],
+    queryFn: () => getPostComments(post._id),
+    enabled: showComments,
+  });
 
-	onError: (error) => {
-		toast.error(
-			error.response?.data?.message ||
-				"Failed to like post"
-		);
-	},
-});
-const handleLike = () => {
-	if (post.isDeleted) return;
+  useEffect(() => {
+    if (!isTargetPost) return;
 
-	likeMutation.mutate(post._id);
-};
-const isLiked = post.likes?.some(
-	(id) => id.toString() === currentUserId?.toString()
-);
+    const timer = setTimeout(() => {
+      postRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
 
-const [showComments, setShowComments] = useState(false);
-const isTargetPost = targetPostId === post._id;
+      if (targetCommentId) {
+        const targetNode = document.querySelector(
+          `[data-comment-id="${targetCommentId}"], [data-reply-id="${targetCommentId}"]`
+        );
 
-useEffect(() => {
-	if (isTargetPost && targetCommentId) {
-		setShowComments(true);
-	}
-}, [isTargetPost, targetCommentId]);
+        if (targetNode) {
+          targetNode.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          targetNode.classList.add("ring-2", "ring-white/50", "rounded-lg");
 
-useEffect(() => {
-	if (!isTargetPost) return;
+          setTimeout(() => {
+            targetNode.classList.remove("ring-2", "ring-white/50", "rounded-lg");
+          }, 2000);
+        }
+      }
+    }, 200);
 
-	const timer = setTimeout(() => {
-		postRef.current?.scrollIntoView({
-			behavior: "smooth",
-			block: "center",
-		});
+    return () => clearTimeout(timer);
+  }, [isTargetPost, targetCommentId, showComments, commentsData]);
 
-		if (targetCommentId) {
-			const targetNode = document.querySelector(
-				`[data-comment-id="${targetCommentId}"], [data-reply-id="${targetCommentId}"]`
-			);
+  const [commentText, setCommentText] = useState("");
+  const createCommentMutation = useMutation({
+    mutationFn: () => createComment(post._id, commentText.trim()),
+    onSuccess: async () => {
+      setCommentText("");
+      await queryClient.invalidateQueries({ queryKey: ["comments", post._id] });
+      await queryClient.invalidateQueries({ queryKey: ["feed"] });
+      await queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to create comment");
+    },
+  });
 
-			if (targetNode) {
-				targetNode.scrollIntoView({
-					behavior: "smooth",
-					block: "center",
-				});
-				targetNode.classList.add(
-					"ring-2",
-					"ring-white/50",
-					"rounded-lg"
-				);
+  const handleCreateComment = (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    createCommentMutation.mutate();
+  };
 
-				setTimeout(() => {
-					targetNode.classList.remove(
-						"ring-2",
-						"ring-white/50",
-						"rounded-lg"
-					);
-				}, 2000);
-			}
-		}
-	}, 200);
+  if (post.isDeleted) {
+    return (
+      <article className="border-b border-white/10 px-4 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white/40">
+            {post.user?.name?.charAt(0).toUpperCase()}
+          </div>
 
-	return () => clearTimeout(timer);
-}, [isTargetPost, targetCommentId, showComments, commentsData]);
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-white/50">{post.user?.username}</span>
+              <span className="text-sm text-white/30">· {post.createdAt}</span>
+            </div>
 
-const {
-	data: commentsData,
-	isLoading: commentsLoading,
-	isError: commentsError,
-} = useQuery({
-	queryKey: ["comments", post._id],
-	queryFn: () => getPostComments(post._id),
-	enabled: showComments, // for lazy loading
-});
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/3 px-4 py-4">
+              <p className="text-sm italic text-white/40">This post was deleted.</p>
+            </div>
 
-const [commentText, setCommentText] = useState("");
-const createCommentMutation = useMutation({
-	mutationFn: () =>
-		createComment(post._id, commentText.trim()),
+            <div className="mt-4 text-sm text-white/40">💬 {post.comments?.length || 0}</div>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
-	onSuccess: async () => {
-		setCommentText("");
+  return (
+    <article ref={postRef} className="border-b border-white/10 px-4 py-5">
+      <div className="rounded-3xl border border-white/10 bg-white/2 p-4 shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition hover:border-white/15">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-white to-white/80 text-sm font-bold text-black shadow-[0_8px_18px_rgba(255,255,255,0.12)]">
+            {post.user?.name?.charAt(0).toUpperCase()}
+          </div>
 
-		await queryClient.invalidateQueries({
-			queryKey: ["comments", post._id],
-		});
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/profile/${post.user?.username}`}
+                className="font-semibold text-white hover:underline"
+              >
+                {post.user?.username}
+              </Link>
+              <span className="text-sm text-white/40">· {post.createdAt}</span>
+            </div>
 
-		await queryClient.invalidateQueries({
-			queryKey: ["feed"],
-		});
+            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-white/90">
+              {post.text}
+            </p>
 
-		await queryClient.invalidateQueries({
-			queryKey: ["userPosts"],
-		});
-	},
+            {post.image?.url && (
+              <div className="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-black/30 shadow-[0_18px_30px_rgba(0,0,0,0.2)]">
+                <img
+                  src={post.image.url}
+                  alt="Post"
+                  className="max-h-150 w-full object-cover"
+                />
+              </div>
+            )}
 
-	onError: (error) => {
-		toast.error(
-			error.response?.data?.message ||
-				"Failed to create comment"
-		);
-	},
-});
-const handleCreateComment = (e) => {
-	e.preventDefault();
+            <div className="mt-4 flex items-center gap-3 text-sm text-white/50">
+              <button
+                type="button"
+                onClick={handleLike}
+                disabled={likeMutation.isPending}
+                className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/2 px-3 py-1.5 transition ${
+                  isLiked
+                    ? "border-white/20 bg-white/10 text-white"
+                    : "text-white/60 hover:border-white/20 hover:text-white"
+                }`}
+              >
+                <FiHeart className={isLiked ? "fill-current text-white" : "text-white/70"} />
+                <span>{post.likes?.length || 0}</span>
+              </button>
 
-	if (!commentText.trim()) return;
+              <button
+                type="button"
+                onClick={() => setShowComments((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/2 px-3 py-1.5 text-white/60 transition hover:border-white/20 hover:text-white"
+              >
+                <FiMessageCircle className="text-base" />
+                <span>{post.comments?.length || 0}</span>
+              </button>
 
-	createCommentMutation.mutate();
-};
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/2 px-3 py-1.5 text-white/60 transition hover:border-white/20 hover:text-white"
+              >
+                <FiShare2 className="text-base" />
+                <span>Share</span>
+              </button>
 
+              {isOwner && !post.isDeleted && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-3 py-1.5 text-red-300 transition hover:border-red-400/40 hover:text-red-200 disabled:opacity-50"
+                >
+                  <FiTrash2 className="text-base" />
+                  <span>{deleteMutation.isPending ? "Deleting..." : "Delete"}</span>
+                </button>
+              )}
+            </div>
 
-	if (post.isDeleted) {
-	return (
-		<article className="border-b border-white/10 px-4 py-5">
-			<div className="flex items-start gap-3">
-				{/* Avatar */}
-				<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white/40">
-					{post.user?.name
-						?.charAt(0)
-						.toUpperCase()}
-				</div>
+            {showComments && (
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
+                  Comments
+                </h3>
 
-				<div className="min-w-0 flex-1">
-					{/* User Header */}
-					<div className="flex items-center gap-2">
-						<span className="font-semibold text-white/50">
-							{post.user?.username}
-						</span>
+                <form onSubmit={handleCreateComment} className="mb-5 flex gap-2">
+                  <input
+                    type="text"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Write a comment..."
+                    maxLength={500}
+                    className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/2 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 transition focus:border-white/20 focus:bg-white/3"
+                  />
 
-						<span className="text-sm text-white/30">
-							· {post.createdAt}
-						</span>
-					</div>
+                  <button
+                    type="submit"
+                    disabled={!commentText.trim() || createCommentMutation.isPending}
+                    className="rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {createCommentMutation.isPending ? "Posting..." : "Post"}
+                  </button>
+                </form>
 
-					{/* Deleted Message */}
-					<div className="mt-3 rounded-xl border border-white/10 bg-white/3 px-4 py-4">
-						<p className="text-sm italic text-white/40">
-							This post was deleted.
-						</p>
-					</div>
+                {commentsLoading && (
+                  <p className="text-sm text-white/40">Loading comments...</p>
+                )}
 
-					{/* Keep comments visible */}
-					<div className="mt-4 text-sm text-white/40">
-						💬 {post.comments?.length || 0}
-					</div>
-				</div>
-			</div>
-		</article>
-	);
-}else{
-	return (
-		<article className="border-b border-white/10 px-4 py-5">
-			{/* User Header */}
-			<div className="flex items-start gap-3">
-				{/* Avatar */}
-				<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-black">
-					{post.user?.name?.charAt(0).toUpperCase()}
-				</div>
+                {commentsError && (
+                  <p className="text-sm text-red-400">Failed to load comments.</p>
+                )}
 
-				<div className="min-w-0 flex-1">
-					{post.isDeleted ? (
-						<p className="mt-2 text-sm italic text-white/40">
-							This post was deleted
-						</p>
-					) : (
-						<>
-							{/* Username + Time */}
-							<div className="flex items-center gap-2">
-								<Link
-									to={`/profile/${post.user?.username}`}
-									className="font-semibold hover:underline"
-								>
-									{post.user?.username}
-								</Link>
+                {!commentsLoading && !commentsError && commentsData?.comments?.length === 0 && (
+                  <p className="text-sm text-white/40">No comments yet.</p>
+                )}
 
-								<span className="text-sm text-white/40">
-									· {post.createdAt}
-								</span>
-							</div>
-
-							{/* Content */}
-							<p className="mt-2 whitespace-pre-wrap text-[15px] leading-6 text-white/90">
-								{post.text}
-							</p>
-
-							{/* Post Image */}
-							{post.image?.url && (
-								<div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
-									<img
-										src={post.image.url}
-										alt="Post"
-										className="max-h-150 w-full object-cover"
-									/>
-								</div>
-							)}
-
-							{/* Actions */}
-							<div className="mt-4 flex items-center gap-6 text-sm text-white/50">
-								<button
-									type="button"
-									onClick={handleLike}
-									disabled={likeMutation.isPending}
-									className={`transition disabled:opacity-50 ${
-										isLiked
-											? "text-white"
-											: "text-white/50 hover:text-white"
-									}`}
-								>
-									{isLiked ? "♥" : "♡"}{" "}
-									{post.likes?.length || 0}
-								</button>
-
-								<button
-									type="button"
-									onClick={() => setShowComments((prev) => !prev)}
-									className="transition hover:text-white"
-								>
-									💬 {post.comments?.length || 0}
-								</button>
-
-								<button
-									type="button"
-									className="transition hover:text-white"
-								>
-									↗ Share
-								</button>
-
-								{isOwner && !post.isDeleted && (
-									<button
-										type="button"
-										onClick={handleDelete}
-										disabled={deleteMutation.isPending}
-										className="transition hover:text-red-400 disabled:opacity-50"
-									>
-										{deleteMutation.isPending
-											? "Deleting..."
-											: "Delete"}
-									</button>
-								)}
-							</div>
-							{showComments && (
-	<div className="mt-5 border-t border-white/10 pt-4">
-		<h3 className="mb-4 text-sm font-semibold text-white">
-			Comments
-		</h3>
-		
-		<form
-	onSubmit={handleCreateComment}
-	className="mb-5 flex gap-2"
->
-	<input
-		type="text"
-		value={commentText}
-		onChange={(e) => setCommentText(e.target.value)}
-		placeholder="Write a comment..."
-		maxLength={500}
-		className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/20"
-	/>
-
-	<button
-		type="submit"
-		disabled={
-			!commentText.trim() ||
-			createCommentMutation.isPending
-		}
-		className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
-	>
-		{createCommentMutation.isPending
-			? "Posting..."
-			: "Post"}
-	</button>
-</form>
-
-		{commentsLoading && (
-			<p className="text-sm text-white/40">
-				Loading comments...
-			</p>
-		)}
-
-		{commentsError && (
-			<p className="text-sm text-red-400">
-				Failed to load comments.
-			</p>
-		)}
-
-		{!commentsLoading &&
-			!commentsError &&
-			commentsData?.comments?.length === 0 && (
-				<p className="text-sm text-white/40">
-					No comments yet.
-				</p>
-			)}
-
-		{commentsData?.comments?.map((comment) => (
-			<CommentItem
-				key={comment._id}
-				comment={comment}
-				targetCommentId={targetCommentId}
-			/>
-		))}
-	</div>
-)}
-						</>
-					)}
-				</div>
-			</div>
-		</article>
-	);
-}
+                {commentsData?.comments?.map((comment) => (
+                  <CommentItem
+                    key={comment._id}
+                    comment={comment}
+                    targetCommentId={targetCommentId}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
 };
 
 export default PostCard;

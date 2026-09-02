@@ -2,6 +2,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import {
+	FiBell,
+	FiHome,
+	FiLogOut,
+	FiPlus,
+	FiSearch,
+	FiUser,
+} from "react-icons/fi";
 import { logoutUser } from "../services/auth.service";
 
 const MobileNav = () => {
@@ -14,7 +22,6 @@ const MobileNav = () => {
 		mutationFn: logoutUser,
 
 		onSuccess: (data) => {
-			// Remove authenticated user data from React Query cache
 			queryClient.removeQueries({
 				queryKey: ["me"],
 			});
@@ -36,58 +43,40 @@ const MobileNav = () => {
 
 	const isActive = (path) => location.pathname === path;
 
+	const itemClass = (active) =>
+		`flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
+			active
+				? "border-white/10 bg-white/10 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
+				: "border-transparent text-white/55 hover:bg-white/5 hover:text-white"
+		}`;
+
 	return (
-		<nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#050505]/95 backdrop-blur lg:hidden">
+		<nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#050505]/90 backdrop-blur-xl lg:hidden">
 			<div className="mx-auto flex h-16 max-w-md items-center justify-around px-4">
-				<Link
-					to="/"
-					className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
-						isActive("/")
-							? "bg-white/10 text-white"
-							: "text-white/50"
-					}`}
-				>
-					Home
-				</Link>
-				<Link
-					to="/notifications"
-					className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm transition ${
-						isActive("/notifications")
-							? "bg-white/10 text-white"
-							: "text-white/50"
-					}`}
-				>
-					Notifications
+				<Link to="/" className={itemClass(isActive("/"))}>
+					<FiHome className="text-lg" />
 				</Link>
 
-				<Link
-					to="/search"
-					className="flex h-10 w-10 items-center justify-center rounded-xl text-sm text-white/50 transition"
-				>
-					Search
+				<Link to="/notifications" className={itemClass(isActive("/notifications"))}>
+					<FiBell className="text-lg" />
 				</Link>
 
-				<Link
-					to="/create"
-					className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-bold text-black transition"
-				>
-					+
+				<Link to="/search" className={itemClass(isActive("/search"))}>
+					<FiSearch className="text-lg" />
+				</Link>
+
+				<Link to="/create" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.18)] transition hover:scale-[1.02]">
+					<FiPlus className="text-xl" />
 				</Link>
 
 				{user && (
 					<Link
 						to={`/profile/${user.username}`}
-						className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold transition ${
-							isActive(
-								`/profile/${user.username}`
-							)
-								? "bg-white text-black"
-								: "bg-white/10 text-white"
-						}`}
+						className={itemClass(isActive(`/profile/${user.username}`))}
 					>
-						{user.name
-							?.charAt(0)
-							.toUpperCase()}
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-white/80 text-[11px] font-bold text-black">
+							{user.name?.charAt(0).toUpperCase()}
+						</div>
 					</Link>
 				)}
 
@@ -95,10 +84,10 @@ const MobileNav = () => {
 					type="button"
 					onClick={() => logoutMutation.mutate()}
 					disabled={logoutMutation.isPending}
-					className="flex h-10 w-10 items-center justify-center rounded-xl text-sm text-white/50 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+					className="flex h-11 w-11 items-center justify-center rounded-2xl border border-transparent text-white/55 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
 					title="Logout"
 				>
-					{logoutMutation.isPending ? "..." : "⏻"}
+					<FiLogOut className="text-lg" />
 				</button>
 			</div>
 		</nav>
